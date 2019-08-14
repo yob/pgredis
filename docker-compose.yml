@@ -4,8 +4,21 @@ services:
   db:
     image: "postgres:9.6"
     environment:
+      POSTGRES_DB: pgredis
+      POSTGRES_USER: pgredis
       POSTGRES_PASSWORD: fnord
-      POSTGRES_USER: postgres
+
+  psql:
+    image: postgres:9.6
+    depends_on:
+      - db
+    environment:
+      PGHOST: db
+      PGUSER: pgredis
+      PGPASSWORD: fnord
+      PGDATABASE: pgredis
+    entrypoint: []
+    command: ["psql"]
 
   dev:
     image: golang:1.12.8-buster

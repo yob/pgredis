@@ -137,7 +137,7 @@ func handleConnection(conn net.Conn, db *sql.DB) {
 				if err == nil {
 					ew = writer.WriteBulkString("OK")
 				} else {
-					ew = writer.WriteBulkString("FAIL") // TODO what is the correct response?
+					ew = writer.WriteBulk(nil)
 				}
 			default:
 				ew = writer.WriteError("Command not support")

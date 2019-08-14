@@ -33,6 +33,9 @@ services:
       - "6379:6379"
     environment:
       GO111MODULE: "on"
+      POSTGRES_DB: pgredis
+      POSTGRES_USER: pgredis
+      POSTGRES_PASSWORD: fnord
 
 volumes:
   pgredis-mod: ~

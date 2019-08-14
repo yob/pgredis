@@ -1,4 +1,4 @@
 #!/bin/bash -eu
 
 go build -o bin/pgredis ./cmd
-./bin/pgredis server
+./bin/pgredis server --database "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}?sslmode=disable"

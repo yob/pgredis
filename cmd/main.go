@@ -14,14 +14,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-const (
-  host     = "db"
-  port     = 5432
-  user     = "pgredis"
-  password = "fnord"
-  dbname   = "pgredis"
-)
-
 func logf(msg string, args ...interface{}) {
 	_, err := fmt.Fprintf(os.Stderr, msg+"\n", args...)
 
@@ -52,9 +44,15 @@ func main() {
 					Usage: "the port to listen on",
 					Value: "6379",
 				},
+				cli.StringFlag{
+					Name:  "database",
+					Usage: "the database connection details (eg. postgres://user:pass@host/dbname?sslmode=disable)",
+					EnvVar: "DATABASE_URL",
+					Required: true,
+				},
 			},
 			Action: func(ctx *cli.Context) error {
-				return startServer(ctx.String("bind"), ctx.String("port"))
+				return startServer(ctx.String("bind"), ctx.String("port"), ctx.String("database"))
 			},
 		},
 	}
@@ -66,8 +64,7 @@ func main() {
 	}
 }
 
-func startServer(bindAddress string, port string) error {
-	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", user, password, host, dbname)
+func startServer(bindAddress string, port string, connStr string) error {
 	fmt.Println("Connecting to: ", connStr)
 
 	db, err := sql.Open("postgres", connStr)

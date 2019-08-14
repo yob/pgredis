@@ -19,4 +19,4 @@ Then query it with the standard redis-cli:
     "OK"
 
     $ redis-cli -h 127.0.0.1 get foo
-    "dummy"
+    "bar"

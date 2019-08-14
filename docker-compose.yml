@@ -1,0 +1,25 @@
+version: "3.4"
+
+services:
+  db:
+    image: "postgres:9.6"
+    environment:
+      POSTGRES_PASSWORD: fnord
+      POSTGRES_USER: postgres
+
+  dev:
+    image: golang:1.12.8-buster
+    depends_on:
+      - db
+    volumes:
+      - .:/work
+      - pgredis-mod:/go/pkg/mod/
+    working_dir: /work
+    command: bash
+    ports:
+      - "6379:6379"
+    environment:
+      GO111MODULE: "on"
+
+volumes:
+  pgredis-mod: ~

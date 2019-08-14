@@ -4,15 +4,4 @@
 
 cd $(dirname $0)/..
 
-docker volume create pgredis-mod
-docker run \
-  -e GO111MODULE=on \
-  -v `pwd`:/work:rw \
-  -v pgredis-mod:/go/pkg/mod/ \
-  -w /work \
-  -i \
-  -p 6379:6379 \
-  --rm \
-  -t golang:1.12.8-buster \
-  "${@-bash}" # default command to launch in the container
-
+docker-compose run --rm --service-ports dev "${@-sh}"

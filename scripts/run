@@ -1,4 +1,4 @@
 #!/bin/bash -eu
 
-go build -o pgredis ./cmd
-./pgredis
+go build -o bin/pgredis ./cmd
+./bin/pgredis

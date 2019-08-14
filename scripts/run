@@ -1,4 +1,4 @@
 #!/bin/bash -eu
 
 go build -o bin/pgredis ./cmd
-./bin/pgredis
+./bin/pgredis server

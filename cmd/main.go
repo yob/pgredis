@@ -31,8 +31,20 @@ func main() {
 		{
 			Name:  "server",
 			Usage: "start the pgredis server",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "bind, b",
+					Usage: "IP address to listen on",
+					Value: "0.0.0.0",
+				},
+				cli.StringFlag{
+					Name:  "port, p",
+					Usage: "the port to listen on",
+					Value: "6379",
+				},
+			},
 			Action: func(ctx *cli.Context) error {
-				return startServer()
+				return startServer(ctx.String("bind"), ctx.String("port"))
 			},
 		},
 	}
@@ -44,12 +56,12 @@ func main() {
 	}
 }
 
-func startServer() error {
-	listener, err := net.Listen("tcp", ":6379")
+func startServer(bindAddress string, port string) error {
+	listener, err := net.Listen("tcp", bindAddress+":"+port)
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("pgredis started on 127.0.0.1:6379")
+	log.Printf("pgredis started on " + bindAddress + ":" + port)
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -95,4 +107,3 @@ func handleConnection(conn net.Conn) {
 		}
 	}
 }
-

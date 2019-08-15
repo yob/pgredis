@@ -7,15 +7,38 @@ import (
 	"log"
 	"net"
 	"strings"
+	"time"
 
 	_ "github.com/lib/pq"
 	"github.com/secmask/go-redisproto"
 )
 
+func openDatabaseWithRetries(connStr string, retries int) (*sql.DB, error) {
+
+	db, err := sql.Open("postgres", connStr)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.Ping()
+	if err != nil {
+		if retries > 0 {
+			time.Sleep(3 * time.Second)
+
+			return openDatabaseWithRetries(connStr, retries - 1)
+		} else {
+			return nil, err
+		}
+	}
+	return db, nil
+}
+
 func StartServer(bindAddress string, port string, connStr string) error {
 	fmt.Println("Connecting to: ", connStr)
 
-	db, err := sql.Open("postgres", connStr)
+	db, err := openDatabaseWithRetries(connStr, 3)
+
 	if err != nil {
 		panic(err)
 	}

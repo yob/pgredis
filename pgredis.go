@@ -99,7 +99,7 @@ func handleConnection(conn net.Conn, db *sql.DB) {
 }
 
 func getString(key []byte, db *sql.DB) ([]byte, error) {
-    var value []byte
+	var value []byte
 
 	sqlStat := "SELECT value FROM redisdata WHERE key = $1"
 	row := db.QueryRow(sqlStat, key)

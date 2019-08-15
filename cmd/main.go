@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"pgredis"
 	"github.com/urfave/cli"
+	"pgredis"
 )
 
 func logf(msg string, args ...interface{}) {
@@ -39,9 +39,9 @@ func main() {
 					Value: "6379",
 				},
 				cli.StringFlag{
-					Name:  "database",
-					Usage: "the database connection details (eg. postgres://user:pass@host/dbname?sslmode=disable)",
-					EnvVar: "DATABASE_URL",
+					Name:     "database",
+					Usage:    "the database connection details (eg. postgres://user:pass@host/dbname?sslmode=disable)",
+					EnvVar:   "DATABASE_URL",
 					Required: true,
 				},
 			},
@@ -57,4 +57,3 @@ func main() {
 		os.Exit(1)
 	}
 }
-

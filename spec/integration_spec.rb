@@ -3,13 +3,11 @@
 RSpec.describe "realredis" do
   let(:redis) { Redis.new(url: ENV.fetch("REALREDIS_URL")) }
 
-  include_examples "set"
-  include_examples "get"
+  include_examples "strings"
 end
 
 RSpec.describe "pgredis" do
   let(:redis) { Redis.new(url: ENV.fetch("PGREDIS_URL")) }
 
-  include_examples "set"
-  include_examples "get"
+  include_examples "strings"
 end

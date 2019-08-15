@@ -84,6 +84,13 @@ func handleConnection(conn net.Conn, db *sql.DB) {
 				} else {
 					ew = writer.WriteBulk(nil)
 				}
+			case "FLUSHALL":
+				err := flushAll(db)
+				if err == nil {
+					ew = writer.WriteBulkString("OK")
+				} else {
+					ew = writer.WriteBulk(nil)
+				}
 			default:
 				ew = writer.WriteError("Command not support")
 			}
@@ -96,6 +103,15 @@ func handleConnection(conn net.Conn, db *sql.DB) {
 			break
 		}
 	}
+}
+
+func flushAll(db *sql.DB) error {
+	sqlStat := "DELETE FROM redisdata"
+	_, err := db.Exec(sqlStat)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func getString(key []byte, db *sql.DB) ([]byte, error) {

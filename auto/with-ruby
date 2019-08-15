@@ -1,0 +1,12 @@
+#!/bin/bash -eu
+#
+# Operate in environment suitable for running ruby specs
+
+cd $(dirname $0)/..
+
+trap '{
+  echo "Stopping containers..."
+  docker-compose down
+}' EXIT
+
+docker-compose run --rm specs "${@-sh}"

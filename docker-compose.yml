@@ -8,6 +8,13 @@ services:
       POSTGRES_USER: pgredis
       POSTGRES_PASSWORD: fnord
 
+  testdb:
+    image: "postgres:9.6"
+    environment:
+      POSTGRES_DB: pgredis
+      POSTGRES_USER: pgredis
+      POSTGRES_PASSWORD: fnord
+
   psql:
     image: postgres:9.6
     depends_on:
@@ -35,5 +42,41 @@ services:
       GO111MODULE: "on"
       DATABASE_URL: "postgres://pgredis:fnord@db/pgredis?sslmode=disable"
 
+  testserver:
+    image: golang:1.12.8-buster
+    depends_on:
+      - testdb
+    volumes:
+      - .:/work
+      - pgredis-mod:/go/pkg/mod/
+    working_dir: /work
+    command: "./scripts/run"
+    ports:
+      - "6379"
+    environment:
+      GO111MODULE: "on"
+      DATABASE_URL: "postgres://pgredis:fnord@testdb/pgredis?sslmode=disable"
+
+  testredis:
+    image: redis:5.0.5
+    ports:
+      - "6379"
+
+  specs:
+    image: ruby:2.6.3
+    depends_on:
+      - testserver
+      - testredis
+    volumes:
+      - .:/work
+      - ruby-2.6.3-gem-cache:/usr/local/bundle
+    working_dir: /work
+    entrypoint: /work/scripts/bundle-exec
+    command: bash
+    environment:
+      PGREDIS_URL: "redis://testserver"
+      REALREDIS_URL: "redis://testredis"
+
 volumes:
   pgredis-mod: ~
+  ruby-2.6.3-gem-cache: ~

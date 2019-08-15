@@ -1,0 +1,5 @@
+#!/bin/bash -eu
+
+wait-for-socket --description real-redis --address testredis --port 6379
+wait-for-socket --description pgredis --address testserver --port 6379
+rspec

@@ -26,7 +26,7 @@ func openDatabaseWithRetries(connStr string, retries int) (*sql.DB, error) {
 		if retries > 0 {
 			time.Sleep(3 * time.Second)
 
-			return openDatabaseWithRetries(connStr, retries - 1)
+			return openDatabaseWithRetries(connStr, retries-1)
 		} else {
 			return nil, err
 		}

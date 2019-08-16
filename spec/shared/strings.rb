@@ -130,6 +130,12 @@ RSpec.shared_examples "strings" do
   end
 
   context "psetex" do
+    it "expires the key after the requested milliseconds" do
+      redis.psetex("foo", 2000, "bar")
+      expect(redis.get("foo")).to eql("bar")
+      sleep(2)
+      expect(redis.get("foo")).to eql(nil)
+    end
     pending "records a ttl in milliseconds on the key" do
       redis.psetex("foo", 2000, "bar")
       expect(redis.ttl("foo")).to be_between(0, 2)

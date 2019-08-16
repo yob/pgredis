@@ -78,6 +78,12 @@ func (cmd *setexCommand) Execute(command *redisproto.Command, redis *PgRedis, wr
 	return setEx(command.Get(1), command.Get(3), command.Get(2), redis, writer)
 }
 
+type psetexCommand struct{}
+
+func (cmd *psetexCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	return setPx(command.Get(1), command.Get(3), command.Get(2), redis, writer)
+}
+
 func setPlain(key []byte, value []byte, redis *PgRedis, writer *redisproto.Writer) error {
 	err := setString(key, value, 0, redis.db)
 	if err == nil {

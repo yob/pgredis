@@ -53,6 +53,12 @@ RSpec.shared_examples "strings" do
   end
 
   context "set with ex" do
+    it "expires the key after the requested seconds" do
+      redis.set("foo", "bar", ex: 2)
+      expect(redis.get("foo")).to eql("bar")
+      sleep(2)
+      expect(redis.get("foo")).to eql(nil)
+    end
     pending "records a ttl in seconds on the key" do
       redis.set("foo", "bar", ex: 2)
       expect(redis.ttl("foo")).to be_between(0, 2)

@@ -1,6 +1,7 @@
 package pgredis
 
 import (
+	"log"
 	"strconv"
 
 	"github.com/secmask/go-redisproto"
@@ -25,7 +26,7 @@ func (cmd *getrangeCommand) Execute(command *redisproto.Command, redis *PgRedis,
 	data, err := getString(command.Get(1), redis.db)
 	if data != nil {
 		start, _ := strconv.Atoi(string(command.Get(2)))
-		end,   _ := strconv.Atoi(string(command.Get(3)))
+		end, _ := strconv.Atoi(string(command.Get(3)))
 
 		if start < 0 {
 			start = len(data) + start
@@ -60,10 +61,19 @@ func (cmd *getrangeCommand) Execute(command *redisproto.Command, redis *PgRedis,
 type setCommand struct{}
 
 func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
-	err := setString(command.Get(1), command.Get(2), redis.db)
+	expiry_millis := 0
+
+	flag := string(command.Get(3))
+	if flag == "EX" {
+		expiry_secs, _ := strconv.Atoi(string(command.Get(4)))
+		expiry_millis = expiry_secs * 1000
+	}
+
+	err := setString(command.Get(1), command.Get(2), expiry_millis, redis.db)
 	if err == nil {
 		return writer.WriteBulkString("OK")
 	} else {
+		log.Println("ERROR: ", err.Error())
 		return writer.WriteBulk(nil)
 	}
 }

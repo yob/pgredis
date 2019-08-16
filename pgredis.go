@@ -35,7 +35,7 @@ func NewPgRedis(connStr string) *PgRedis {
 		db: db,
 		commands: map[string]redisCommand{
 			"GET":      &getCommand{},
-			"GETRANGE":  &getrangeCommand{},
+			"GETRANGE": &getrangeCommand{},
 			"SET":      &setCommand{},
 			"FLUSHALL": &flushallCommand{},
 		},
@@ -80,7 +80,7 @@ func (redis *PgRedis) StartServer(bindAddress string, port string) error {
 }
 
 func setupSchema(db *sql.DB) error {
-	_, err := db.Query("create table if not exists redisdata (key TEXT PRIMARY KEY, value TEXT not null)")
+	_, err := db.Query("create table if not exists redisdata (key TEXT PRIMARY KEY, value TEXT not null, expires_at timestamp with time zone NULL)")
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func flushAll(db *sql.DB) error {
 func getString(key []byte, db *sql.DB) ([]byte, error) {
 	var value []byte
 
-	sqlStat := "SELECT value FROM redisdata WHERE key = $1"
+	sqlStat := "SELECT value FROM redisdata WHERE key = $1 AND (expires_at > now() OR expires_at IS NULL)"
 	row := db.QueryRow(sqlStat, key)
 
 	switch err := row.Scan(&value); err {
@@ -151,9 +151,15 @@ func getString(key []byte, db *sql.DB) ([]byte, error) {
 	}
 }
 
-func setString(key []byte, value []byte, db *sql.DB) error {
-	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value"
-	_, err := db.Exec(sqlStat, key, value)
+func setString(key []byte, value []byte, expiry_millis int, db *sql.DB) (err error) {
+	if expiry_millis == 0 {
+		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, NULL) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, expires_at = NULL"
+		_, err = db.Exec(sqlStat, key, value)
+	} else {
+		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, now() + cast($3 as interval)) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, expires_at = EXCLUDED.expires_at"
+		interval := fmt.Sprintf("%d milliseconds", expiry_millis)
+		_, err = db.Exec(sqlStat, key, value, interval)
+	}
 	if err != nil {
 		return err
 	}

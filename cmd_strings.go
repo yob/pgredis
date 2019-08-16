@@ -72,6 +72,12 @@ func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 
 }
 
+type setexCommand struct{}
+
+func (cmd *setexCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	return setEx(command.Get(1), command.Get(3), command.Get(2), redis, writer)
+}
+
 func setPlain(key []byte, value []byte, redis *PgRedis, writer *redisproto.Writer) error {
 	err := setString(key, value, 0, redis.db)
 	if err == nil {

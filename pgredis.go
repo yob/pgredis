@@ -14,7 +14,8 @@ import (
 )
 
 type PgRedis struct {
-	db *sql.DB
+	db       *sql.DB
+	commands map[string]redisCommand
 }
 
 type redisCommand interface {
@@ -77,8 +78,14 @@ func NewPgRedis(connStr string) *PgRedis {
 
 	return &PgRedis{
 		db: db,
+		commands: map[string]redisCommand{
+			"GET":      &GetCommand{},
+			"SET":      &SetCommand{},
+			"FLUSHALL": &FlushallCommand{},
+		},
 	}
 }
+
 func openDatabaseWithRetries(connStr string, retries int) (*sql.DB, error) {
 
 	db, err := sql.Open("postgres", connStr)
@@ -125,18 +132,13 @@ func setupSchema(db *sql.DB) error {
 	return nil
 }
 
-func (redis *PgRedis) handleCmd(command *redisproto.Command, writer *redisproto.Writer) error {
-	implementedCommands := map[string]redisCommand{
-		"GET":      &GetCommand{},
-		"SET":      &SetCommand{},
-		"FLUSHALL": &FlushallCommand{},
+func (redis *PgRedis) selectCmd(data []byte) redisCommand {
+	cmdString := strings.ToUpper(string(data))
+	implementation := redis.commands[cmdString]
+	if implementation == nil {
+		implementation = &UnrecognisedCommand{}
 	}
-	cmdString := strings.ToUpper(string(command.Get(0)))
-	cmd := implementedCommands[cmdString]
-	if cmd == nil {
-		cmd = &UnrecognisedCommand{}
-	}
-	return cmd.Execute(command, redis, writer)
+	return implementation
 }
 
 func (redis *PgRedis) handleConnection(conn net.Conn) {
@@ -155,7 +157,8 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 				break
 			}
 		} else {
-			ew = redis.handleCmd(command, writer)
+			cmd := redis.selectCmd(command.Get(0))
+			ew = cmd.Execute(command, redis, writer)
 		}
 		if command.IsLast() {
 			writer.Flush()

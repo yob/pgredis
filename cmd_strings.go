@@ -67,6 +67,9 @@ func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 	if flag == "EX" {
 		expiry_secs, _ := strconv.Atoi(string(command.Get(4)))
 		expiry_millis = expiry_secs * 1000
+	} else if flag == "PX" {
+		expiry_raw, _ := strconv.Atoi(string(command.Get(4)))
+		expiry_millis = expiry_raw
 	}
 
 	err := setString(command.Get(1), command.Get(2), expiry_millis, redis.db)

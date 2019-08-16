@@ -125,23 +125,18 @@ func setupSchema(db *sql.DB) error {
 	return nil
 }
 
-func (redis *PgRedis) handleCmd(command *redisproto.Command, writer *redisproto.Writer) (ew error) {
-	cmd := strings.ToUpper(string(command.Get(0)))
-	switch cmd {
-	case "GET":
-		foo := &GetCommand{}
-		ew = foo.Execute(command, redis, writer)
-	case "SET":
-		foo := &SetCommand{}
-		ew = foo.Execute(command, redis, writer)
-	case "FLUSHALL":
-		foo := &FlushallCommand{}
-		ew = foo.Execute(command, redis, writer)
-	default:
-		foo := &UnrecognisedCommand{}
-		ew = foo.Execute(command, redis, writer)
+func (redis *PgRedis) handleCmd(command *redisproto.Command, writer *redisproto.Writer) error {
+	implementedCommands := map[string]redisCommand{
+		"GET":      &GetCommand{},
+		"SET":      &SetCommand{},
+		"FLUSHALL": &FlushallCommand{},
 	}
-	return
+	cmdString := strings.ToUpper(string(command.Get(0)))
+	cmd := implementedCommands[cmdString]
+	if cmd == nil {
+		cmd = &UnrecognisedCommand{}
+	}
+	return cmd.Execute(command, redis, writer)
 }
 
 func (redis *PgRedis) handleConnection(conn net.Conn) {

@@ -4,9 +4,9 @@ import (
 	"github.com/secmask/go-redisproto"
 )
 
-type GetCommand struct{}
+type getCommand struct{}
 
-func (cmd *GetCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	resp, err := getString(command.Get(1), redis.db)
 	if resp != nil {
 		return writer.WriteBulkString(string(resp))
@@ -17,9 +17,9 @@ func (cmd *GetCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 	}
 }
 
-type SetCommand struct{}
+type setCommand struct{}
 
-func (cmd *SetCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	err := setString(command.Get(1), command.Get(2), redis.db)
 	if err == nil {
 		return writer.WriteBulkString("OK")

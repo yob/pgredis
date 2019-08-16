@@ -34,9 +34,9 @@ func NewPgRedis(connStr string) *PgRedis {
 	return &PgRedis{
 		db: db,
 		commands: map[string]redisCommand{
-			"GET":      &GetCommand{},
-			"SET":      &SetCommand{},
-			"FLUSHALL": &FlushallCommand{},
+			"GET":      &getCommand{},
+			"SET":      &setCommand{},
+			"FLUSHALL": &flushallCommand{},
 		},
 	}
 }
@@ -91,7 +91,7 @@ func (redis *PgRedis) selectCmd(data []byte) redisCommand {
 	cmdString := strings.ToUpper(string(data))
 	implementation := redis.commands[cmdString]
 	if implementation == nil {
-		implementation = &UnrecognisedCommand{}
+		implementation = &unrecognisedCommand{}
 	}
 	return implementation
 }

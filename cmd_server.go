@@ -4,9 +4,9 @@ import (
 	"github.com/secmask/go-redisproto"
 )
 
-type FlushallCommand struct{}
+type flushallCommand struct{}
 
-func (cmd *FlushallCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *flushallCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	err := flushAll(redis.db)
 	if err == nil {
 		return writer.WriteBulkString("OK")

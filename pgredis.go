@@ -17,8 +17,22 @@ type PgRedis struct {
 	db *sql.DB
 }
 
-func NewPgRedis() *PgRedis {
-	return &PgRedis{}
+func NewPgRedis(connStr string) *PgRedis {
+	fmt.Println("Connecting to: ", connStr)
+	db, err := openDatabaseWithRetries(connStr, 3)
+
+	if err != nil {
+		panic(err)
+	}
+
+	err = setupSchema(db)
+	if err != nil {
+		panic(err)
+	}
+
+	return &PgRedis{
+		db: db,
+	}
 }
 func openDatabaseWithRetries(connStr string, retries int) (*sql.DB, error) {
 
@@ -41,22 +55,7 @@ func openDatabaseWithRetries(connStr string, retries int) (*sql.DB, error) {
 	return db, nil
 }
 
-func (redis *PgRedis) StartServer(bindAddress string, port string, connStr string) error {
-	fmt.Println("Connecting to: ", connStr)
-
-	db, err := openDatabaseWithRetries(connStr, 3)
-
-	if err != nil {
-		panic(err)
-	}
-	redis.db = db
-	defer db.Close()
-
-	err = setupSchema(db)
-	if err != nil {
-		panic(err)
-	}
-
+func (redis *PgRedis) StartServer(bindAddress string, port string) error {
 	listener, err := net.Listen("tcp", bindAddress+":"+port)
 	if err != nil {
 		panic(err)

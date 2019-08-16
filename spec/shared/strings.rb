@@ -251,7 +251,7 @@ RSpec.shared_examples "strings" do
   end
 
   context "getrange" do
-    pending "returns the requested substring" do
+    it "returns the requested substring" do
       redis.set("foo", "abcde")
 
       expect(redis.getrange("foo", 1, 3)).to eql("bcd")

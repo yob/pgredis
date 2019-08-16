@@ -61,18 +61,42 @@ func (cmd *getrangeCommand) Execute(command *redisproto.Command, redis *PgRedis,
 type setCommand struct{}
 
 func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
-	expiry_millis := 0
-
 	flag := string(command.Get(3))
 	if flag == "EX" {
-		expiry_secs, _ := strconv.Atoi(string(command.Get(4)))
-		expiry_millis = expiry_secs * 1000
+		return setEx(command.Get(1), command.Get(2), command.Get(4), redis, writer)
 	} else if flag == "PX" {
-		expiry_raw, _ := strconv.Atoi(string(command.Get(4)))
-		expiry_millis = expiry_raw
+		return setPx(command.Get(1), command.Get(2), command.Get(4), redis, writer)
+	} else {
+		return setPlain(command.Get(1), command.Get(2), redis, writer)
 	}
 
-	err := setString(command.Get(1), command.Get(2), expiry_millis, redis.db)
+}
+
+func setPlain(key []byte, value []byte, redis *PgRedis, writer *redisproto.Writer) error {
+	err := setString(key, value, 0, redis.db)
+	if err == nil {
+		return writer.WriteBulkString("OK")
+	} else {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	}
+}
+
+func setEx(key []byte, value []byte, expiry_secs []byte, redis *PgRedis, writer *redisproto.Writer) error {
+	expiry_secs_int, _ := strconv.Atoi(string(expiry_secs))
+	expiry_millis := expiry_secs_int * 1000
+	err := setString(key, value, expiry_millis, redis.db)
+	if err == nil {
+		return writer.WriteBulkString("OK")
+	} else {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	}
+}
+
+func setPx(key []byte, value []byte, expiry_millis []byte, redis *PgRedis, writer *redisproto.Writer) error {
+	expiry_millis_int, _ := strconv.Atoi(string(expiry_millis))
+	err := setString(key, value, expiry_millis_int, redis.db)
 	if err == nil {
 		return writer.WriteBulkString("OK")
 	} else {

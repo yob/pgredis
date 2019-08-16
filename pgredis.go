@@ -80,6 +80,38 @@ func setupSchema(db *sql.DB) error {
 	return nil
 }
 
+func (redis *PgRedis) handleCmd(command *redisproto.Command, writer *redisproto.Writer) (ew error) {
+	cmd := strings.ToUpper(string(command.Get(0)))
+	switch cmd {
+	case "GET":
+		resp, err := getString(command.Get(1), redis.db)
+		if resp != nil {
+			ew = writer.WriteBulkString(string(resp))
+		} else if resp == nil && err == nil {
+			ew = writer.WriteBulk(nil)
+		} else {
+			panic(err)
+		}
+	case "SET":
+		err := setString(command.Get(1), command.Get(2), redis.db)
+		if err == nil {
+			ew = writer.WriteBulkString("OK")
+		} else {
+			ew = writer.WriteBulk(nil)
+		}
+	case "FLUSHALL":
+		err := flushAll(redis.db)
+		if err == nil {
+			ew = writer.WriteBulkString("OK")
+		} else {
+			ew = writer.WriteBulk(nil)
+		}
+	default:
+		ew = writer.WriteError("Command not support")
+	}
+	return
+}
+
 func (redis *PgRedis) handleConnection(conn net.Conn) {
 	defer conn.Close()
 	parser := redisproto.NewParser(conn)
@@ -96,34 +128,7 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 				break
 			}
 		} else {
-			cmd := strings.ToUpper(string(command.Get(0)))
-			switch cmd {
-			case "GET":
-				resp, err := getString(command.Get(1), redis.db)
-				if resp != nil {
-					ew = writer.WriteBulkString(string(resp))
-				} else if resp == nil && err == nil {
-					ew = writer.WriteBulk(nil)
-				} else {
-					panic(err)
-				}
-			case "SET":
-				err := setString(command.Get(1), command.Get(2), redis.db)
-				if err == nil {
-					ew = writer.WriteBulkString("OK")
-				} else {
-					ew = writer.WriteBulk(nil)
-				}
-			case "FLUSHALL":
-				err := flushAll(redis.db)
-				if err == nil {
-					ew = writer.WriteBulkString("OK")
-				} else {
-					ew = writer.WriteBulk(nil)
-				}
-			default:
-				ew = writer.WriteError("Command not support")
-			}
+			ew = redis.handleCmd(command, writer)
 		}
 		if command.IsLast() {
 			writer.Flush()

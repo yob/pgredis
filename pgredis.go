@@ -13,6 +13,13 @@ import (
 	"github.com/secmask/go-redisproto"
 )
 
+type PgRedis struct {
+	db *sql.DB
+}
+
+func NewPgRedis() *PgRedis {
+	return &PgRedis{}
+}
 func openDatabaseWithRetries(connStr string, retries int) (*sql.DB, error) {
 
 	db, err := sql.Open("postgres", connStr)
@@ -34,7 +41,7 @@ func openDatabaseWithRetries(connStr string, retries int) (*sql.DB, error) {
 	return db, nil
 }
 
-func StartServer(bindAddress string, port string, connStr string) error {
+func (redis *PgRedis) StartServer(bindAddress string, port string, connStr string) error {
 	fmt.Println("Connecting to: ", connStr)
 
 	db, err := openDatabaseWithRetries(connStr, 3)
@@ -42,6 +49,7 @@ func StartServer(bindAddress string, port string, connStr string) error {
 	if err != nil {
 		panic(err)
 	}
+	redis.db = db
 	defer db.Close()
 
 	err = setupSchema(db)
@@ -60,7 +68,7 @@ func StartServer(bindAddress string, port string, connStr string) error {
 			log.Println("Error on accept: ", err)
 			continue
 		}
-		go handleConnection(conn, db)
+		go redis.handleConnection(conn)
 	}
 }
 
@@ -73,7 +81,7 @@ func setupSchema(db *sql.DB) error {
 	return nil
 }
 
-func handleConnection(conn net.Conn, db *sql.DB) {
+func (redis *PgRedis) handleConnection(conn net.Conn) {
 	defer conn.Close()
 	parser := redisproto.NewParser(conn)
 	writer := redisproto.NewWriter(bufio.NewWriter(conn))
@@ -92,7 +100,7 @@ func handleConnection(conn net.Conn, db *sql.DB) {
 			cmd := strings.ToUpper(string(command.Get(0)))
 			switch cmd {
 			case "GET":
-				resp, err := getString(command.Get(1), db)
+				resp, err := getString(command.Get(1), redis.db)
 				if resp != nil {
 					ew = writer.WriteBulkString(string(resp))
 				} else if resp == nil && err == nil {
@@ -101,14 +109,14 @@ func handleConnection(conn net.Conn, db *sql.DB) {
 					panic(err)
 				}
 			case "SET":
-				err := setString(command.Get(1), command.Get(2), db)
+				err := setString(command.Get(1), command.Get(2), redis.db)
 				if err == nil {
 					ew = writer.WriteBulkString("OK")
 				} else {
 					ew = writer.WriteBulk(nil)
 				}
 			case "FLUSHALL":
-				err := flushAll(db)
+				err := flushAll(redis.db)
 				if err == nil {
 					ew = writer.WriteBulkString("OK")
 				} else {

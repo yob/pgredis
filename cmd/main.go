@@ -46,7 +46,8 @@ func main() {
 				},
 			},
 			Action: func(ctx *cli.Context) error {
-				return pgredis.StartServer(ctx.String("bind"), ctx.String("port"), ctx.String("database"))
+				server := pgredis.NewPgRedis()
+				return server.StartServer(ctx.String("bind"), ctx.String("port"), ctx.String("database"))
 			},
 		},
 	}

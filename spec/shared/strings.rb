@@ -145,7 +145,7 @@ RSpec.shared_examples "strings" do
   context "setnx" do
 
     context "when the key already exists" do
-      pending "does not set the key" do
+      it "does not set the key" do
         redis.set("foo", "bar")
         redis.setnx("foo", "baz")
         expect(redis.get("foo")).to eql("bar")
@@ -153,7 +153,7 @@ RSpec.shared_examples "strings" do
     end
 
     context "when the key does not already exist" do
-      pending "sets the key" do
+      it "sets the key" do
         redis.setnx("foo", "baz")
         expect(redis.get("foo")).to eql("baz")
       end

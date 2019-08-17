@@ -141,6 +141,26 @@ func (cmd *psetexCommand) Execute(command *redisproto.Command, redis *PgRedis, w
 	}
 }
 
+type setnxCommand struct{}
+
+func (cmd *setnxCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	value := command.Get(2)
+	expiry_millis := 0
+
+	updated, err := insertOrSkipString(key, value, expiry_millis, redis.db)
+	if err == nil {
+		if updated {
+			return writer.WriteBulkString("OK")
+		} else {
+			return writer.WriteBulk(nil)
+		}
+	} else {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	}
+}
+
 func commandExValueInMillis(command *redisproto.Command) int {
 	indexOfEx := indexOfValue(command, "EX")
 	if indexOfEx == 0 {

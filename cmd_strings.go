@@ -61,7 +61,6 @@ func (cmd *getrangeCommand) Execute(command *redisproto.Command, redis *PgRedis,
 type setCommand struct{}
 
 func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
-	// TODO delete any expired rows in the db with this key
 	expiry_millis := 0
 	exValue := commandExValueInMillis(command)
 	if exValue > 0 {

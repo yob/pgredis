@@ -170,6 +170,7 @@ func insertOrUpdateString(key []byte, value []byte, expiry_millis int, db *sql.D
 }
 
 func insertOrSkipString(key []byte, value []byte, expiry_millis int, db *sql.DB) (inserted bool, err error) {
+	// TODO delete any expired rows in the db with this key
 	var res sql.Result
 	if expiry_millis == 0 {
 		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, NULL) ON CONFLICT (key) DO NOTHING"
@@ -190,6 +191,7 @@ func insertOrSkipString(key []byte, value []byte, expiry_millis int, db *sql.DB)
 }
 
 func updateOrSkipString(key []byte, value []byte, expiry_millis int, db *sql.DB) (updated bool, err error) {
+	// TODO delete any expired rows in the db with this key
 	var res sql.Result
 	if expiry_millis == 0 {
 		sqlStat := "UPDATE redisdata SET value=$2, expires_at=NULL WHERE key=$1 AND (expires_at IS NULL OR expires_at < now())"

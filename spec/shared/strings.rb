@@ -287,14 +287,14 @@ RSpec.shared_examples "strings" do
 
   context "strlen" do
     context "when the key exists" do
-      pending "returns the length of the value" do
+      it "returns the length of the value" do
         redis.set("foo", "abcde")
 
         expect(redis.strlen("foo")).to eql(5)
       end
     end
     context "when the key doesn't exists" do
-      pending "returns 0" do
+      it "returns 0" do
         expect(redis.strlen("foo")).to eql(0)
       end
     end

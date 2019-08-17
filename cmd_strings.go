@@ -181,6 +181,19 @@ func (cmd *setnxCommand) Execute(command *redisproto.Command, redis *PgRedis, wr
 	}
 }
 
+type strlenCommand struct{}
+
+func (cmd *strlenCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	success, resp, err := getString(command.Get(1), redis.db)
+	if success {
+		return writer.WriteInt(int64(len(resp.value)))
+	} else if !success && err == nil {
+		return writer.WriteInt(0)
+	} else {
+		panic(err) // TODO ergh
+	}
+}
+
 func commandExValueInMillis(command *redisproto.Command) int {
 	indexOfEx := indexOfValue(command, "EX")
 	if indexOfEx == 0 {

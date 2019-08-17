@@ -162,14 +162,14 @@ RSpec.shared_examples "strings" do
 
   context "getset" do
     context "when there's a previous value" do
-      pending "sets a new value and returns the previous value" do
+      it "sets a new value and returns the previous value" do
         redis.set("foo", "bar")
         expect(redis.getset("foo", "baz")).to eql("bar")
         expect(redis.get("foo")).to eql("baz")
       end
     end
     context "when there's no previous value" do
-      pending "sets a new value and returns nil" do
+      it "sets a new value and returns nil" do
         expect(redis.getset("foo", "baz")).to eql(nil)
         expect(redis.get("foo")).to eql("baz")
       end

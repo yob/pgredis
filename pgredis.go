@@ -52,6 +52,7 @@ func NewPgRedis(connStr string) *PgRedis {
 		commands: map[string]redisCommand{
 			"GET":      &getCommand{},
 			"GETRANGE": &getrangeCommand{},
+			"GETSET":   &getsetCommand{},
 			"PSETEX":   &psetexCommand{},
 			"SET":      &setCommand{},
 			"SETEX":    &setexCommand{},

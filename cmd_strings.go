@@ -20,6 +20,27 @@ func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 	}
 }
 
+type getsetCommand struct{}
+
+func (cmd *getsetCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	expiry_millis := 0
+	getSuccess, resp, err := getString(command.Get(1), redis.db)
+
+	insertErr := insertOrUpdateString(command.Get(1), command.Get(2), expiry_millis, redis.db)
+	if insertErr == nil {
+		if getSuccess {
+			return writer.WriteBulkString(string(resp.value))
+		} else if !getSuccess && err == nil {
+			return writer.WriteBulk(nil)
+		} else {
+			panic(err) // TODO ergh
+		}
+	} else {
+		log.Println("DB ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	}
+}
+
 type getrangeCommand struct{}
 
 func (cmd *getrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {

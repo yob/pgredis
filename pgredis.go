@@ -167,3 +167,23 @@ func insertOrUpdateString(key []byte, value []byte, expiry_millis int, db *sql.D
 	}
 	return nil
 }
+
+func updateOrSkipString(key []byte, value []byte, expiry_millis int, db *sql.DB) (updated bool, err error) {
+	var res sql.Result
+	if expiry_millis == 0 {
+		sqlStat := "UPDATE redisdata SET value=$2, expires_at=NULL WHERE key=$1 AND (expires_at IS NULL OR expires_at < now())"
+		res , err = db.Exec(sqlStat, key, value)
+		count, _ := res.RowsAffected()
+		updated = count > 0
+	} else {
+		sqlStat := "UPDATE redisdata SET value=$2, expires_at=now() + cast($3 as interval) WHERE key=$1 AND (expires_at IS NULL OR expires_at < now())"
+		interval := fmt.Sprintf("%d milliseconds", expiry_millis)
+		res, err = db.Exec(sqlStat, key, value, interval)
+		count, _ := res.RowsAffected()
+		updated = count > 0
+	}
+	if err != nil {
+		return updated, err
+	}
+	return false, nil
+}

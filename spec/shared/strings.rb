@@ -107,7 +107,7 @@ RSpec.shared_examples "strings" do
     end
 
     context "when the key does not already exists" do
-      pending "does not set the key" do
+      it "does not set the key" do
         expect(
           redis.set("foo", "baz", xx: true)
         ).to eql(false)

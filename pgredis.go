@@ -195,7 +195,7 @@ func updateOrSkipString(key []byte, value []byte, expiry_millis int, db *sql.DB)
 	var res sql.Result
 	if expiry_millis == 0 {
 		sqlStat := "UPDATE redisdata SET value=$2, expires_at=NULL WHERE key=$1 AND (expires_at IS NULL OR expires_at < now())"
-		res , err = db.Exec(sqlStat, key, value)
+		res, err = db.Exec(sqlStat, key, value)
 		count, _ := res.RowsAffected()
 		updated = count > 0
 	} else {

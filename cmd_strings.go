@@ -112,19 +112,11 @@ func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 type setexCommand struct{}
 
 func (cmd *setexCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
-	expiry_secs_int, _ := strconv.Atoi(string(command.Get(2)))
-	return setEx(command.Get(1), command.Get(3), expiry_secs_int, redis, writer)
-}
-
-type psetexCommand struct{}
-
-func (cmd *psetexCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
-	expiry_millis_int, _ := strconv.Atoi(string(command.Get(2)))
-	return setPx(command.Get(1), command.Get(3), expiry_millis_int, redis, writer)
-}
-
-func setEx(key []byte, value []byte, expiry_secs int, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	expiry_secs, _ := strconv.Atoi(string(command.Get(2)))
+	value := command.Get(3)
 	expiry_millis := expiry_secs * 1000
+
 	err := insertOrUpdateString(key, value, expiry_millis, redis.db)
 	if err == nil {
 		return writer.WriteBulkString("OK")
@@ -134,7 +126,12 @@ func setEx(key []byte, value []byte, expiry_secs int, redis *PgRedis, writer *re
 	}
 }
 
-func setPx(key []byte, value []byte, expiry_millis int, redis *PgRedis, writer *redisproto.Writer) error {
+type psetexCommand struct{}
+
+func (cmd *psetexCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	expiry_millis, _ := strconv.Atoi(string(command.Get(2)))
+	value := command.Get(3)
 	err := insertOrUpdateString(key, value, expiry_millis, redis.db)
 	if err == nil {
 		return writer.WriteBulkString("OK")

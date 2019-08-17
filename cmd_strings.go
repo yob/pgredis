@@ -85,7 +85,7 @@ func (cmd *psetexCommand) Execute(command *redisproto.Command, redis *PgRedis, w
 }
 
 func setPlain(key []byte, value []byte, redis *PgRedis, writer *redisproto.Writer) error {
-	err := setString(key, value, 0, redis.db)
+	err := insertOrUpdateString(key, value, 0, redis.db)
 	if err == nil {
 		return writer.WriteBulkString("OK")
 	} else {
@@ -97,7 +97,7 @@ func setPlain(key []byte, value []byte, redis *PgRedis, writer *redisproto.Write
 func setEx(key []byte, value []byte, expiry_secs []byte, redis *PgRedis, writer *redisproto.Writer) error {
 	expiry_secs_int, _ := strconv.Atoi(string(expiry_secs))
 	expiry_millis := expiry_secs_int * 1000
-	err := setString(key, value, expiry_millis, redis.db)
+	err := insertOrUpdateString(key, value, expiry_millis, redis.db)
 	if err == nil {
 		return writer.WriteBulkString("OK")
 	} else {
@@ -108,7 +108,7 @@ func setEx(key []byte, value []byte, expiry_secs []byte, redis *PgRedis, writer 
 
 func setPx(key []byte, value []byte, expiry_millis []byte, redis *PgRedis, writer *redisproto.Writer) error {
 	expiry_millis_int, _ := strconv.Atoi(string(expiry_millis))
-	err := setString(key, value, expiry_millis_int, redis.db)
+	err := insertOrUpdateString(key, value, expiry_millis_int, redis.db)
 	if err == nil {
 		return writer.WriteBulkString("OK")
 	} else {

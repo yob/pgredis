@@ -153,7 +153,7 @@ func getString(key []byte, db *sql.DB) ([]byte, error) {
 	}
 }
 
-func setString(key []byte, value []byte, expiry_millis int, db *sql.DB) (err error) {
+func insertOrUpdateString(key []byte, value []byte, expiry_millis int, db *sql.DB) (err error) {
 	if expiry_millis == 0 {
 		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, NULL) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, expires_at = NULL"
 		_, err = db.Exec(sqlStat, key, value)

@@ -9,13 +9,19 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 	"github.com/secmask/go-redisproto"
 )
 
 type PgRedis struct {
 	db       *sql.DB
 	commands map[string]redisCommand
+}
+
+type redisString struct {
+	key        []byte
+	value      []byte
+	expires_at time.Time
 }
 
 func NewPgRedis(connStr string) *PgRedis {
@@ -138,19 +144,23 @@ func flushAll(db *sql.DB) error {
 	return nil
 }
 
-func getString(key []byte, db *sql.DB) ([]byte, error) {
-	var value []byte
+func getString(key []byte, db *sql.DB) (bool, redisString, error) {
+	result := redisString{}
+	var expiresAt pq.NullTime
 
-	sqlStat := "SELECT value FROM redisdata WHERE key = $1 AND (expires_at > now() OR expires_at IS NULL)"
+	sqlStat := "SELECT key, value, expires_at FROM redisdata WHERE key = $1 AND (expires_at > now() OR expires_at IS NULL)"
 	row := db.QueryRow(sqlStat, key)
 
-	switch err := row.Scan(&value); err {
+	switch err := row.Scan(&result.key, &result.value, &expiresAt); err {
 	case sql.ErrNoRows:
-		return nil, nil
+		return false, result, nil
 	case nil:
-		return value, nil
+		if expiresAt.Valid {
+			result.expires_at = expiresAt.Time
+		}
+		return true, result, nil
 	default:
-		return nil, err
+		return false, result, err
 	}
 }
 

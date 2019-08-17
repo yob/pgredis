@@ -10,10 +10,10 @@ import (
 type getCommand struct{}
 
 func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
-	resp, err := getString(command.Get(1), redis.db)
-	if resp != nil {
-		return writer.WriteBulkString(string(resp))
-	} else if resp == nil && err == nil {
+	success, resp, err := getString(command.Get(1), redis.db)
+	if success {
+		return writer.WriteBulkString(string(resp.value))
+	} else if !success && err == nil {
 		return writer.WriteBulk(nil)
 	} else {
 		panic(err) // TODO ergh
@@ -23,17 +23,17 @@ func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 type getrangeCommand struct{}
 
 func (cmd *getrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
-	data, err := getString(command.Get(1), redis.db)
-	if data != nil {
+	success, result, err := getString(command.Get(1), redis.db)
+	if success {
 		start, _ := strconv.Atoi(string(command.Get(2)))
 		end, _ := strconv.Atoi(string(command.Get(3)))
 
 		if start < 0 {
-			start = len(data) + start
+			start = len(result.value) + start
 		}
 
 		if end < 0 {
-			end = len(data) + end
+			end = len(result.value) + end
 		}
 
 		end += 1
@@ -42,16 +42,16 @@ func (cmd *getrangeCommand) Execute(command *redisproto.Command, redis *PgRedis,
 			end = start
 		}
 
-		if start > len(data) {
-			start = len(data)
+		if start > len(result.value) {
+			start = len(result.value)
 		}
 
-		if end > len(data) {
-			end = len(data)
+		if end > len(result.value) {
+			end = len(result.value)
 		}
 
-		return writer.WriteBulkString(string(data[start:end]))
-	} else if data == nil && err == nil {
+		return writer.WriteBulkString(string(result.value[start:end]))
+	} else if !success && err == nil {
 		return writer.WriteBulk(nil)
 	} else {
 		return err

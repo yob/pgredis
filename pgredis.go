@@ -22,6 +22,16 @@ type redisString struct {
 	key        []byte
 	value      []byte
 	expires_at time.Time
+	has_expiry bool
+}
+
+func (str *redisString) TTLInSeconds() int64 {
+	if str.has_expiry {
+		diff := str.expires_at.Sub(time.Now()).Seconds()
+		return int64(diff)
+	} else {
+		return 0
+	}
 }
 
 func NewPgRedis(connStr string) *PgRedis {
@@ -46,6 +56,7 @@ func NewPgRedis(connStr string) *PgRedis {
 			"SET":      &setCommand{},
 			"SETEX":    &setexCommand{},
 			"SETNX":    &setnxCommand{},
+			"TTL":      &ttlCommand{},
 			"FLUSHALL": &flushallCommand{},
 		},
 	}
@@ -156,6 +167,7 @@ func getString(key []byte, db *sql.DB) (bool, redisString, error) {
 		return false, result, nil
 	case nil:
 		if expiresAt.Valid {
+			result.has_expiry = true
 			result.expires_at = expiresAt.Time
 		}
 		return true, result, nil

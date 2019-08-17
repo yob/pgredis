@@ -59,7 +59,7 @@ RSpec.shared_examples "strings" do
       sleep(2)
       expect(redis.get("foo")).to eql(nil)
     end
-    pending "records a ttl in seconds on the key" do
+    it "records a ttl in seconds on the key" do
       redis.set("foo", "bar", ex: 2)
       expect(redis.ttl("foo")).to be_between(0, 2)
     end
@@ -72,7 +72,7 @@ RSpec.shared_examples "strings" do
       sleep(2)
       expect(redis.get("foo")).to eql(nil)
     end
-    pending "records a ttl in milliseconds on the key" do
+    it "records a ttl in milliseconds on the key" do
       redis.set("foo", "bar", px: 2000)
       expect(redis.ttl("foo")).to be_between(0, 2)
     end
@@ -123,7 +123,7 @@ RSpec.shared_examples "strings" do
       expect(redis.get("foo")).to eql(nil)
     end
 
-    pending "records a ttl in seconds on the key" do
+    it "records a ttl in seconds on the key" do
       redis.setex("foo", 2, "bar")
       expect(redis.ttl("foo")).to be_between(0, 2)
     end
@@ -136,7 +136,7 @@ RSpec.shared_examples "strings" do
       sleep(2)
       expect(redis.get("foo")).to eql(nil)
     end
-    pending "records a ttl in milliseconds on the key" do
+    it "records a ttl in milliseconds on the key" do
       redis.psetex("foo", 2000, "bar")
       expect(redis.ttl("foo")).to be_between(0, 2)
     end

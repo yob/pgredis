@@ -61,6 +61,7 @@ func (cmd *getrangeCommand) Execute(command *redisproto.Command, redis *PgRedis,
 type setCommand struct{}
 
 func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	// TODO delete any expired rows in the db with this key
 	expiry_millis := 0
 	exValue := commandExValueInMillis(command)
 	if exValue > 0 {
@@ -72,8 +73,21 @@ func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 	}
 
 	xxArgProvided := commandHasValue(command, "XX")
+	nxArgProvided := commandHasValue(command, "NX")
 	if xxArgProvided { // only set the key if it already exists
 		updated, err := updateOrSkipString(command.Get(1), command.Get(2), expiry_millis, redis.db)
+		if err == nil {
+			if updated {
+				return writer.WriteBulkString("OK")
+			} else {
+				return writer.WriteBulk(nil)
+			}
+		} else {
+			log.Println("ERROR: ", err.Error())
+			return writer.WriteBulk(nil)
+		}
+	} else if nxArgProvided { // only set the key if it doesn't already exists
+		updated, err := insertOrSkipString(command.Get(1), command.Get(2), expiry_millis, redis.db)
 		if err == nil {
 			if updated {
 				return writer.WriteBulkString("OK")

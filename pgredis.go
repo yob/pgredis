@@ -168,6 +168,26 @@ func insertOrUpdateString(key []byte, value []byte, expiry_millis int, db *sql.D
 	return nil
 }
 
+func insertOrSkipString(key []byte, value []byte, expiry_millis int, db *sql.DB) (inserted bool, err error) {
+	var res sql.Result
+	if expiry_millis == 0 {
+		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, NULL) ON CONFLICT (key) DO NOTHING"
+		res, err = db.Exec(sqlStat, key, value)
+		count, _ := res.RowsAffected()
+		inserted = count > 0
+	} else {
+		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, now() + cast($3 as interval)) ON CONFLICT DO NOTHING"
+		interval := fmt.Sprintf("%d milliseconds", expiry_millis)
+		res, err = db.Exec(sqlStat, key, value, interval)
+		count, _ := res.RowsAffected()
+		inserted = count > 0
+	}
+	if err != nil {
+		return inserted, err
+	}
+	return inserted, nil
+}
+
 func updateOrSkipString(key []byte, value []byte, expiry_millis int, db *sql.DB) (updated bool, err error) {
 	var res sql.Result
 	if expiry_millis == 0 {

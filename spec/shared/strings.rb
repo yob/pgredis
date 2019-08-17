@@ -81,7 +81,7 @@ RSpec.shared_examples "strings" do
   context "set with nx" do
 
     context "when the key already exist" do
-      pending "does not set the key" do
+      it "does not set the key" do
         redis.set("foo", "bar")
         redis.set("foo", "baz", nx: true)
         expect(redis.get("foo")).to eql("bar")

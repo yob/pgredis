@@ -50,6 +50,7 @@ func NewPgRedis(connStr string) *PgRedis {
 	return &PgRedis{
 		db: db,
 		commands: map[string]redisCommand{
+			"APPEND":   &appendCommand{},
 			"GET":      &getCommand{},
 			"GETRANGE": &getrangeCommand{},
 			"GETSET":   &getsetCommand{},
@@ -233,4 +234,16 @@ func updateOrSkipString(key []byte, value []byte, expiry_millis int, db *sql.DB)
 		return updated, err
 	}
 	return false, nil
+}
+
+func insertOrAppendString(key []byte, value []byte, db *sql.DB) ([]byte, error) {
+	// TODO delete any expired rows in the db with this key
+	var finalValue []byte
+
+	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = redisdata.value || EXCLUDED.value RETURNING value"
+	err := db.QueryRow(sqlStat, key, value).Scan(&finalValue)
+	if err != nil {
+		return nil, err
+	}
+	return finalValue, nil
 }

@@ -220,14 +220,14 @@ RSpec.shared_examples "strings" do
 
   context "append" do
     context "when the key already exists" do
-      pending "appends to the end of the existing value" do
+      it "appends to the end of the existing value" do
         redis.set("foo", "s")
         redis.append("foo", "1")
         expect(redis.get("foo")).to eql("s1")
       end
     end
     context "when the key doesn't exist" do
-      pending "starts a new value" do
+      it "starts a new value" do
         redis.append("foo", "1")
         expect(redis.get("foo")).to eql("1")
       end

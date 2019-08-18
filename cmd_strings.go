@@ -7,6 +7,20 @@ import (
 	"github.com/secmask/go-redisproto"
 )
 
+type appendCommand struct{}
+
+func (cmd *appendCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	value := command.Get(2)
+	newValue, err := insertOrAppendString(key, value, redis.db)
+	if err == nil {
+		return writer.WriteInt(int64(len(newValue)))
+	} else {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	}
+}
+
 type getCommand struct{}
 
 func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {

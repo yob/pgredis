@@ -43,11 +43,15 @@ RSpec.shared_examples "strings" do
   end
 
   context "with non ASCII values" do
-    pending "returns all values unmodified" do
+    # we have to manually mess with the encoding markers to ensure ruby considers
+    # byte-identical strings to be equal. The goal is testing the server though, so
+    # I'm OK with that
+    it "returns all values unmodified" do
       (0..255).each do |i|
-        str = "#{i.chr}---#{i.chr}"
+        str = "#{i.chr}---#{i.chr}".force_encoding("binary")
         redis.set("foo", str)
-        expect(redis.get("foo")).to eql(str)
+        result = redis.get("foo").force_encoding("binary")
+        expect(result).to eql(str)
       end
     end
   end

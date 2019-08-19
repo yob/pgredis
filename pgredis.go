@@ -110,7 +110,7 @@ func (redis *PgRedis) StartServer(bindAddress string, port string) error {
 }
 
 func setupSchema(db *sql.DB) error {
-	_, err := db.Query("create table if not exists redisdata (key TEXT PRIMARY KEY, value TEXT not null, expires_at timestamp with time zone NULL)")
+	_, err := db.Query("create table if not exists redisdata (key bytea PRIMARY KEY, value bytea not null, expires_at timestamp with time zone NULL)")
 	if err != nil {
 		return err
 	}

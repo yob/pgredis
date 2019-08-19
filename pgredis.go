@@ -22,15 +22,22 @@ type redisString struct {
 	key        []byte
 	value      []byte
 	expires_at time.Time
-	has_expiry bool
 }
 
 func (str *redisString) TTLInSeconds() int64 {
-	if str.has_expiry {
+	if str.expires_at.IsZero() {
+		return 0
+	} else {
 		diff := str.expires_at.Sub(time.Now()).Seconds()
 		return int64(diff)
+	}
+}
+
+func (str *redisString) WillExpire() bool {
+	if str.expires_at.IsZero() {
+		return false
 	} else {
-		return 0
+		return true
 	}
 }
 
@@ -170,7 +177,6 @@ func getString(key []byte, db *sql.DB) (bool, redisString, error) {
 		return false, result, nil
 	case nil:
 		if expiresAt.Valid {
-			result.has_expiry = true
 			result.expires_at = expiresAt.Time
 		}
 		return true, result, nil

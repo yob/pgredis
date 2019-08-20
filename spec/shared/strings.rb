@@ -239,7 +239,7 @@ RSpec.shared_examples "strings" do
   end
 
   context "getbit" do
-    pending "returns the bit at the requested position" do
+    it "returns the bit at the requested position" do
       redis.set("foo", "a")
 
       expect(redis.getbit("foo", 1)).to eql(1)

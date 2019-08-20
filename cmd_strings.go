@@ -1,10 +1,12 @@
 package pgredis
 
 import (
+	"bytes"
 	"log"
 	"strconv"
 
 	"github.com/secmask/go-redisproto"
+	"github.com/32bitkid/bitreader"
 )
 
 type appendCommand struct{}
@@ -31,6 +33,34 @@ func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 		return writer.WriteBulk(nil)
 	} else {
 		panic(err) // TODO ergh
+	}
+}
+
+type getbitCommand struct{}
+
+func (cmd *getbitCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	success, resp, err := getString(command.Get(1), redis.db)
+	bitPosition, _ := strconv.Atoi(string(command.Get(2)))
+
+	if success {
+		byteReader := bytes.NewReader(resp.value)
+        bitReader := bitreader.NewReader(byteReader)
+		bitReader.Skip(uint(bitPosition))
+		bitSet, err := bitReader.Read1()
+		if err != nil {
+			log.Println("ERROR: ", err.Error())
+			return writer.WriteInt(0) // assumed to be an empty string, with all 0 bits
+		}
+		if bitSet {
+			return writer.WriteInt(1)
+		} else {
+			return writer.WriteInt(0)
+		}
+	} else if !success && err == nil {
+		return writer.WriteInt(0) // assumed to be an empty string, with all 0 bits
+	} else {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteInt(0) // TODO probbly not right
 	}
 }
 

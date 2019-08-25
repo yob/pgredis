@@ -264,16 +264,28 @@ RSpec.shared_examples "strings" do
 
   context "bitcount" do
     context "when the key exists" do
-      pending "returns the number of set bits in the value" do
+      before do
         redis.set("foo", "abcde")
+      end
 
-        expect(redis.bitcount("foo")).to eql(17)
-        expect(redis.bitcount("foo", 1, 3)).to eql(10) # key, start, end
-        expect(redis.bitcount("foo", 0, -1)).to eql(17) # key, start, end
+      context "with no position params" do
+        it "returns the number of set bits in the value" do
+          expect(redis.bitcount("foo")).to eql(17)
+        end
+      end
+      context "with position params" do
+        pending "returns the number of set bits in the value" do
+          expect(redis.bitcount("foo", 1, 3)).to eql(10) # key, start, end
+        end
+      end
+      context "with a negative end position" do
+        pending "returns the number of set bits in the value" do
+          expect(redis.bitcount("foo", 0, -2)).to eql(13) # key, start, end
+        end
       end
     end
     context "when the key doesn't exists" do
-      pending "returns 0" do
+      it "returns 0" do
         expect(redis.bitcount("foo")).to eql(0)
       end
     end

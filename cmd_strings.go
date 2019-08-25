@@ -23,6 +23,40 @@ func (cmd *appendCommand) Execute(command *redisproto.Command, redis *PgRedis, w
 	}
 }
 
+type bitcountCommand struct{}
+
+func (cmd *bitcountCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	success, resp, err := getString(command.Get(1), redis.db)
+
+	if success {
+		byteReader := bytes.NewReader(resp.value)
+		bitReader := bitreader.NewReader(byteReader)
+		setCount := int64(0)
+		checkedCount := int64(0)
+
+		for {
+			checkedCount += 1
+			bitSet, bitErr := bitReader.Read1()
+			if bitErr != nil {
+				// this is never true, see https://github.com/32bitkid/bitreader/pull/2
+				break
+			}
+			if bitSet {
+				setCount += 1
+			}
+			if checkedCount >= int64(len(resp.value)) * 8 {
+				break
+			}
+		}
+		return writer.WriteInt(setCount)
+	} else if !success && err == nil {
+		return writer.WriteInt(0) // assumed to be an empty string, with all 0 bits
+	} else {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteInt(0) // TODO probbly not right
+	}
+}
+
 type getCommand struct{}
 
 func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {

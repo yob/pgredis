@@ -5,8 +5,8 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/secmask/go-redisproto"
 	"github.com/32bitkid/bitreader"
+	"github.com/secmask/go-redisproto"
 )
 
 type appendCommand struct{}
@@ -44,7 +44,7 @@ func (cmd *getbitCommand) Execute(command *redisproto.Command, redis *PgRedis, w
 
 	if success {
 		byteReader := bytes.NewReader(resp.value)
-        bitReader := bitreader.NewReader(byteReader)
+		bitReader := bitreader.NewReader(byteReader)
 		bitReader.Skip(uint(bitPosition))
 		bitSet, err := bitReader.Read1()
 		if err != nil {

@@ -274,12 +274,12 @@ RSpec.shared_examples "strings" do
         end
       end
       context "with position params" do
-        pending "returns the number of set bits in the value" do
+        it "returns the number of set bits in the value" do
           expect(redis.bitcount("foo", 1, 3)).to eql(10) # key, start, end
         end
       end
       context "with a negative end position" do
-        pending "returns the number of set bits in the value" do
+        it "returns the number of set bits in the value" do
           expect(redis.bitcount("foo", 0, -2)).to eql(13) # key, start, end
         end
       end

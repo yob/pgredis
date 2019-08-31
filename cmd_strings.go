@@ -25,12 +25,52 @@ func (cmd *appendCommand) Execute(command *redisproto.Command, redis *PgRedis, w
 
 type bitcountCommand struct{}
 
+func intOrZero(value string) int {
+	if value == "" {
+		return 0
+	} else {
+		result, err := strconv.Atoi(value)
+		if err != nil {
+			return 0
+		}
+		return result
+	}
+}
+
 func (cmd *bitcountCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
-	success, resp, err := getString(command.Get(1), redis.db)
+	key := command.Get(1)
+	success, result, err := getString(key, redis.db)
 
 	if success {
-		byteReader := bytes.NewReader(resp.value)
+		start, _ := strconv.Atoi(string(command.Get(2)))
+		end, _ := strconv.Atoi(string(command.Get(3)))
+
+		if start < 0 {
+			start = len(result.value) + start
+		}
+
+		if end < 0 {
+			end = len(result.value) + end
+		}
+
+		end += 1
+
+		if end < start {
+			end = start
+		}
+
+		if start > len(result.value) {
+			start = len(result.value)
+		}
+
+		if end > len(result.value) {
+			end = len(result.value)
+		}
+		bytesToRead := end - start
+
+		byteReader := bytes.NewReader(result.value)
 		bitReader := bitreader.NewReader(byteReader)
+		bitReader.Skip(uint(start))
 		setCount := int64(0)
 		checkedCount := int64(0)
 
@@ -44,7 +84,7 @@ func (cmd *bitcountCommand) Execute(command *redisproto.Command, redis *PgRedis,
 			if bitSet {
 				setCount += 1
 			}
-			if checkedCount >= int64(len(resp.value)) * 8 {
+			if checkedCount >= int64(bytesToRead * 8) {
 				break
 			}
 		}

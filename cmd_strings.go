@@ -84,7 +84,7 @@ func (cmd *bitcountCommand) Execute(command *redisproto.Command, redis *PgRedis,
 			if bitSet {
 				setCount += 1
 			}
-			if checkedCount >= int64(bytesToRead * 8) {
+			if checkedCount >= int64(bytesToRead*8) {
 				break
 			}
 		}
@@ -194,6 +194,20 @@ func (cmd *getrangeCommand) Execute(command *redisproto.Command, redis *PgRedis,
 		return writer.WriteBulk(nil)
 	} else {
 		return err
+	}
+}
+
+type incrCommand struct{}
+
+func (cmd *incrCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	newValue, err := incrString(key, redis.db)
+	if err == nil {
+		intValue, _ := strconv.Atoi(string(newValue))
+		return writer.WriteInt(int64(intValue))
+	} else {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
 	}
 }
 

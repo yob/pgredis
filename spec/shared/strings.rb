@@ -181,7 +181,7 @@ RSpec.shared_examples "strings" do
   end
 
   context "incr" do
-    pending "increments a counter each time" do
+    it "increments a counter each time" do
       expect(redis.incr("foo")).to eql(1)
       expect(redis.incr("foo")).to eql(2)
       expect(redis.incr("foo")).to eql(3)

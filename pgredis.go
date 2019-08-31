@@ -63,6 +63,7 @@ func NewPgRedis(connStr string) *PgRedis {
 			"GETBIT":   &getbitCommand{},
 			"GETRANGE": &getrangeCommand{},
 			"GETSET":   &getsetCommand{},
+			"INCR":     &incrCommand{},
 			"PSETEX":   &psetexCommand{},
 			"SET":      &setCommand{},
 			"SETEX":    &setexCommand{},
@@ -250,6 +251,18 @@ func insertOrAppendString(key []byte, value []byte, db *sql.DB) ([]byte, error) 
 
 	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = redisdata.value || EXCLUDED.value RETURNING value"
 	err := db.QueryRow(sqlStat, key, value).Scan(&finalValue)
+	if err != nil {
+		return nil, err
+	}
+	return finalValue, nil
+}
+
+func incrString(key []byte, db *sql.DB) ([]byte, error) {
+	// TODO delete any expired rows in the db with this key
+	var finalValue []byte
+
+	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, '1') ON CONFLICT (key) DO UPDATE SET value = ((cast(encode(redisdata.value,'escape') as integer)+1)::text)::bytea RETURNING value"
+	err := db.QueryRow(sqlStat, key).Scan(&finalValue)
 	if err != nil {
 		return nil, err
 	}

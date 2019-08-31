@@ -101,7 +101,22 @@ type decrCommand struct{}
 
 func (cmd *decrCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	key := command.Get(1)
-	newValue, err := decrString(key, redis.db)
+	newValue, err := decrString(key, 1, redis.db)
+	if err == nil {
+		intValue, _ := strconv.Atoi(string(newValue))
+		return writer.WriteInt(int64(intValue))
+	} else {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	}
+}
+
+type decrbyCommand struct{}
+
+func (cmd *decrbyCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	by, _ := strconv.Atoi(string(command.Get(2)))
+	newValue, err := decrString(key, by, redis.db)
 	if err == nil {
 		intValue, _ := strconv.Atoi(string(newValue))
 		return writer.WriteInt(int64(intValue))
@@ -215,7 +230,22 @@ type incrCommand struct{}
 
 func (cmd *incrCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	key := command.Get(1)
-	newValue, err := incrString(key, redis.db)
+	newValue, err := incrString(key, 1, redis.db)
+	if err == nil {
+		intValue, _ := strconv.Atoi(string(newValue))
+		return writer.WriteInt(int64(intValue))
+	} else {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	}
+}
+
+type incrbyCommand struct{}
+
+func (cmd *incrbyCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	by, _ := strconv.Atoi(string(command.Get(2)))
+	newValue, err := incrString(key, by, redis.db)
 	if err == nil {
 		intValue, _ := strconv.Atoi(string(newValue))
 		return writer.WriteInt(int64(intValue))

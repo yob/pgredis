@@ -60,11 +60,13 @@ func NewPgRedis(connStr string) *PgRedis {
 			"APPEND":   &appendCommand{},
 			"BITCOUNT": &bitcountCommand{},
 			"DECR":     &decrCommand{},
+			"DECRBY":   &decrbyCommand{},
 			"GET":      &getCommand{},
 			"GETBIT":   &getbitCommand{},
 			"GETRANGE": &getrangeCommand{},
 			"GETSET":   &getsetCommand{},
 			"INCR":     &incrCommand{},
+			"INCRBY":   &incrbyCommand{},
 			"PSETEX":   &psetexCommand{},
 			"SET":      &setCommand{},
 			"SETEX":    &setexCommand{},
@@ -258,24 +260,24 @@ func insertOrAppendString(key []byte, value []byte, db *sql.DB) ([]byte, error) 
 	return finalValue, nil
 }
 
-func incrString(key []byte, db *sql.DB) ([]byte, error) {
+func incrString(key []byte, by int, db *sql.DB) ([]byte, error) {
 	// TODO delete any expired rows in the db with this key
 	var finalValue []byte
 
-	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, '1') ON CONFLICT (key) DO UPDATE SET value = ((cast(encode(redisdata.value,'escape') as integer)+1)::text)::bytea RETURNING value"
-	err := db.QueryRow(sqlStat, key).Scan(&finalValue)
+	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = ((cast(encode(redisdata.value,'escape') as integer)+$3)::text)::bytea RETURNING value"
+	err := db.QueryRow(sqlStat, key, by, by).Scan(&finalValue)
 	if err != nil {
 		return nil, err
 	}
 	return finalValue, nil
 }
 
-func decrString(key []byte, db *sql.DB) ([]byte, error) {
+func decrString(key []byte, by int, db *sql.DB) ([]byte, error) {
 	// TODO delete any expired rows in the db with this key
 	var finalValue []byte
 
-	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, '-1') ON CONFLICT (key) DO UPDATE SET value = ((cast(encode(redisdata.value,'escape') as integer)-1)::text)::bytea RETURNING value"
-	err := db.QueryRow(sqlStat, key).Scan(&finalValue)
+	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = ((cast(encode(redisdata.value,'escape') as integer)-$3)::text)::bytea RETURNING value"
+	err := db.QueryRow(sqlStat, key, by, by).Scan(&finalValue)
 	if err != nil {
 		return nil, err
 	}

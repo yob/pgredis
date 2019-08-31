@@ -189,7 +189,7 @@ RSpec.shared_examples "strings" do
   end
 
   context "incrby" do
-    pending "increments a counter each time" do
+    it "increments a counter each time" do
       expect(redis.incrby("foo", 1)).to eql(1)
       expect(redis.incrby("foo", 2)).to eql(3)
       expect(redis.incrby("foo", 3)).to eql(6)
@@ -214,7 +214,7 @@ RSpec.shared_examples "strings" do
   end
 
   context "decrby" do
-    pending "decrements a counter each time" do
+    it "decrements a counter each time" do
       redis.set("foo", 6)
       expect(redis.decrby("foo", 3)).to eql(3)
       expect(redis.decrby("foo", 2)).to eql(1)

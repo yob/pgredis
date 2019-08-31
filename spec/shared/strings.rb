@@ -205,7 +205,7 @@ RSpec.shared_examples "strings" do
   end
 
   context "decr" do
-    pending "decrements a counter each time" do
+    it "decrements a counter each time" do
       redis.set("foo", 3)
       expect(redis.decr("foo")).to eql(2)
       expect(redis.decr("foo")).to eql(1)

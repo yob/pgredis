@@ -97,6 +97,20 @@ func (cmd *bitcountCommand) Execute(command *redisproto.Command, redis *PgRedis,
 	}
 }
 
+type decrCommand struct{}
+
+func (cmd *decrCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	newValue, err := decrString(key, redis.db)
+	if err == nil {
+		intValue, _ := strconv.Atoi(string(newValue))
+		return writer.WriteInt(int64(intValue))
+	} else {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	}
+}
+
 type getCommand struct{}
 
 func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {

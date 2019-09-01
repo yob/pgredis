@@ -57,28 +57,61 @@ RSpec.shared_examples "strings" do
   end
 
   context "set with ex" do
-    it "expires the key after the requested seconds" do
-      redis.set("foo", "bar", ex: 2)
-      expect(redis.get("foo")).to eql("bar")
-      sleep(2)
-      expect(redis.get("foo")).to eql(nil)
+    context "when the key doesn't exist" do
+      it "expires the key after the requested seconds" do
+        redis.set("foo", "bar", ex: 2)
+        expect(redis.get("foo")).to eql("bar")
+        sleep(2)
+        expect(redis.get("foo")).to eql(nil)
+      end
+      it "records a ttl in seconds on the key" do
+        redis.set("foo", "bar", ex: 2)
+        expect(redis.ttl("foo")).to be_between(0, 2)
+      end
     end
-    it "records a ttl in seconds on the key" do
-      redis.set("foo", "bar", ex: 2)
-      expect(redis.ttl("foo")).to be_between(0, 2)
+    context "when the key already exists but it's expired" do
+      it "sets sets the key" do
+        redis.set("foo", "bar", px: 1) # 1 ms, almost insta expire
+
+        sleep(0.1)
+        expect(redis.get("foo")).to eql(nil) # should be expired
+
+        # set it again, using the option we want to test
+        redis.set("foo", "bar", ex: 2)
+
+        # confirm the value is readable
+        expect(redis.get("foo")).to eql("bar")
+      end
     end
   end
 
   context "set with px" do
-    it "expires the key after the requested milliseconds" do
-      redis.set("foo", "bar", px: 2000)
-      expect(redis.get("foo")).to eql("bar")
-      sleep(2)
-      expect(redis.get("foo")).to eql(nil)
+    context "when the key doesn't exist" do
+      it "expires the key after the requested milliseconds" do
+        redis.set("foo", "bar", px: 2000)
+        expect(redis.get("foo")).to eql("bar")
+        sleep(2)
+        expect(redis.get("foo")).to eql(nil)
+      end
+      it "records a ttl in milliseconds on the key" do
+        redis.set("foo", "bar", px: 2000)
+        expect(redis.ttl("foo")).to be_between(0, 2)
+      end
     end
-    it "records a ttl in milliseconds on the key" do
-      redis.set("foo", "bar", px: 2000)
-      expect(redis.ttl("foo")).to be_between(0, 2)
+    context "when the key already exists but it's expired" do
+      it "sets sets the key" do
+        redis.set("foo", "bar", px: 1) # 1 ms, almost insta expire
+
+        sleep(0.1)
+        expect(redis.get("foo")).to eql(nil) # should be expired
+
+        # set it again, with a longer expiry to avoid flakey specs
+        redis.set("foo", "bar", px: 5000)
+
+        # confirm the value is readable
+        expect(redis.get("foo")).to eql("bar")
+        expect(redis.ttl("foo")).to be_between(0, 5)
+      end
     end
   end
 

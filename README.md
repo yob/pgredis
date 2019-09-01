@@ -60,16 +60,12 @@ bug in pgredis rather than the specs.
 
 ## TODO
 
-* finish implementing the spec'd string commands
 * spec and implement a few connection commands, like ECHO, PING and QUIT
 * spec and implement list commands (or at least the ones required by sidekiq)
 * improve stdout/stderr of the server
   * log in a consistent way
   * add debug levels so it's possible to print full commands and responses if required
   * don't print an error when clients disconnect
-* improve data acces layer. Maybe with repository pattern?
-* investigate concurrency behaviour, and consider adding explicit transactions
-  or locking if required
 * default to leaving some dangerous commands (like FLUSHALL) disabled. Allow the operator
   to opt-in to enabling them with a CLI switch
 * Prometheas metrics endpoint?

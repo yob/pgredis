@@ -14,7 +14,7 @@ type appendCommand struct{}
 func (cmd *appendCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	key := command.Get(1)
 	value := command.Get(2)
-	newValue, err := insertOrAppendString(key, value, redis.db)
+	newValue, err := redis.strings.InsertOrAppendString(key, value)
 	if err == nil {
 		return writer.WriteInt(int64(len(newValue)))
 	} else {
@@ -39,18 +39,18 @@ func intOrZero(value string) int {
 
 func (cmd *bitcountCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	key := command.Get(1)
-	success, result, err := getString(key, redis.db)
+	success, result, err := redis.strings.GetString(key)
 
 	if success {
 		start, _ := strconv.Atoi(string(command.Get(2)))
 		end, _ := strconv.Atoi(string(command.Get(3)))
 
 		if start < 0 {
-			start = len(result.value) + start
+			start = len(result.Value) + start
 		}
 
 		if end < 0 {
-			end = len(result.value) + end
+			end = len(result.Value) + end
 		}
 
 		end += 1
@@ -59,16 +59,16 @@ func (cmd *bitcountCommand) Execute(command *redisproto.Command, redis *PgRedis,
 			end = start
 		}
 
-		if start > len(result.value) {
-			start = len(result.value)
+		if start > len(result.Value) {
+			start = len(result.Value)
 		}
 
-		if end > len(result.value) {
-			end = len(result.value)
+		if end > len(result.Value) {
+			end = len(result.Value)
 		}
 		bitsToRead := (end - start) * 8
 
-		byteReader := bytes.NewReader(result.value)
+		byteReader := bytes.NewReader(result.Value)
 		bitReader := bitreader.NewReader(byteReader)
 		bitReader.Skip(uint(start))
 		setCount := int64(0)
@@ -95,7 +95,7 @@ type decrCommand struct{}
 
 func (cmd *decrCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	key := command.Get(1)
-	newValue, err := incrString(key, -1, redis.db)
+	newValue, err := redis.strings.IncrString(key, -1)
 	if err == nil {
 		intValue, _ := strconv.Atoi(string(newValue))
 		return writer.WriteInt(int64(intValue))
@@ -110,7 +110,7 @@ type decrbyCommand struct{}
 func (cmd *decrbyCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	key := command.Get(1)
 	by, _ := strconv.Atoi(string(command.Get(2)))
-	newValue, err := incrString(key, by*-1, redis.db)
+	newValue, err := redis.strings.IncrString(key, by*-1)
 	if err == nil {
 		intValue, _ := strconv.Atoi(string(newValue))
 		return writer.WriteInt(int64(intValue))
@@ -123,9 +123,9 @@ func (cmd *decrbyCommand) Execute(command *redisproto.Command, redis *PgRedis, w
 type getCommand struct{}
 
 func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
-	success, resp, err := getString(command.Get(1), redis.db)
+	success, resp, err := redis.strings.GetString(command.Get(1))
 	if success {
-		return writer.WriteBulkString(string(resp.value))
+		return writer.WriteBulkString(string(resp.Value))
 	} else if !success && err == nil {
 		return writer.WriteBulk(nil)
 	} else {
@@ -136,11 +136,11 @@ func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 type getbitCommand struct{}
 
 func (cmd *getbitCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
-	success, resp, err := getString(command.Get(1), redis.db)
+	success, resp, err := redis.strings.GetString(command.Get(1))
 	bitPosition, _ := strconv.Atoi(string(command.Get(2)))
 
 	if success {
-		byteReader := bytes.NewReader(resp.value)
+		byteReader := bytes.NewReader(resp.Value)
 		bitReader := bitreader.NewReader(byteReader)
 		bitReader.Skip(uint(bitPosition))
 		bitSet, err := bitReader.Read1()
@@ -165,12 +165,12 @@ type getsetCommand struct{}
 
 func (cmd *getsetCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	expiry_millis := 0
-	getSuccess, resp, err := getString(command.Get(1), redis.db)
+	getSuccess, resp, err := redis.strings.GetString(command.Get(1))
 
-	insertErr := insertOrUpdateString(command.Get(1), command.Get(2), expiry_millis, redis.db)
+	insertErr := redis.strings.InsertOrUpdateString(command.Get(1), command.Get(2), expiry_millis)
 	if insertErr == nil {
 		if getSuccess {
-			return writer.WriteBulkString(string(resp.value))
+			return writer.WriteBulkString(string(resp.Value))
 		} else if !getSuccess && err == nil {
 			return writer.WriteBulk(nil)
 		} else {
@@ -185,17 +185,17 @@ func (cmd *getsetCommand) Execute(command *redisproto.Command, redis *PgRedis, w
 type getrangeCommand struct{}
 
 func (cmd *getrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
-	success, result, err := getString(command.Get(1), redis.db)
+	success, result, err := redis.strings.GetString(command.Get(1))
 	if success {
 		start, _ := strconv.Atoi(string(command.Get(2)))
 		end, _ := strconv.Atoi(string(command.Get(3)))
 
 		if start < 0 {
-			start = len(result.value) + start
+			start = len(result.Value) + start
 		}
 
 		if end < 0 {
-			end = len(result.value) + end
+			end = len(result.Value) + end
 		}
 
 		end += 1
@@ -204,15 +204,15 @@ func (cmd *getrangeCommand) Execute(command *redisproto.Command, redis *PgRedis,
 			end = start
 		}
 
-		if start > len(result.value) {
-			start = len(result.value)
+		if start > len(result.Value) {
+			start = len(result.Value)
 		}
 
-		if end > len(result.value) {
-			end = len(result.value)
+		if end > len(result.Value) {
+			end = len(result.Value)
 		}
 
-		return writer.WriteBulkString(string(result.value[start:end]))
+		return writer.WriteBulkString(string(result.Value[start:end]))
 	} else if !success && err == nil {
 		return writer.WriteBulk(nil)
 	} else {
@@ -224,7 +224,7 @@ type incrCommand struct{}
 
 func (cmd *incrCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	key := command.Get(1)
-	newValue, err := incrString(key, 1, redis.db)
+	newValue, err := redis.strings.IncrString(key, 1)
 	if err == nil {
 		intValue, _ := strconv.Atoi(string(newValue))
 		return writer.WriteInt(int64(intValue))
@@ -239,7 +239,7 @@ type incrbyCommand struct{}
 func (cmd *incrbyCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	key := command.Get(1)
 	by, _ := strconv.Atoi(string(command.Get(2)))
-	newValue, err := incrString(key, by, redis.db)
+	newValue, err := redis.strings.IncrString(key, by)
 	if err == nil {
 		intValue, _ := strconv.Atoi(string(newValue))
 		return writer.WriteInt(int64(intValue))
@@ -254,7 +254,7 @@ type incrbyfloatCommand struct{}
 func (cmd *incrbyfloatCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	key := command.Get(1)
 	by, _ := strconv.ParseFloat(string(command.Get(2)), 64)
-	newValue, err := incrDecimalString(key, by, redis.db)
+	newValue, err := redis.strings.IncrDecimalString(key, by)
 	if err == nil {
 		return writer.WriteBulkString(string(newValue))
 	} else {
@@ -270,9 +270,9 @@ func (cmd *mgetCommand) Execute(command *redisproto.Command, redis *PgRedis, wri
 	for i := 1; i < command.ArgCount(); i++ {
 		// TODO calling getStrings in a loop like this returns the correct result, but is super
 		//      inefficient
-		success, resp, _ := getString(command.Get(i), redis.db)
+		success, resp, _ := redis.strings.GetString(command.Get(i))
 		if success {
-			result[i-1] = string(resp.value)
+			result[i-1] = string(resp.Value)
 		}
 	}
 	return writer.WriteObjectsSlice(result)
@@ -294,7 +294,7 @@ func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 	xxArgProvided := commandHasValue(command, "XX")
 	nxArgProvided := commandHasValue(command, "NX")
 	if xxArgProvided { // only set the key if it already exists
-		updated, err := updateOrSkipString(command.Get(1), command.Get(2), expiry_millis, redis.db)
+		updated, err := redis.strings.UpdateOrSkipString(command.Get(1), command.Get(2), expiry_millis)
 		if err == nil {
 			if updated {
 				return writer.WriteBulkString("OK")
@@ -306,7 +306,7 @@ func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 			return writer.WriteBulk(nil)
 		}
 	} else if nxArgProvided { // only set the key if it doesn't already exists
-		updated, err := insertOrSkipString(command.Get(1), command.Get(2), expiry_millis, redis.db)
+		updated, err := redis.strings.InsertOrSkipString(command.Get(1), command.Get(2), expiry_millis)
 		if err == nil {
 			if updated {
 				return writer.WriteBulkString("OK")
@@ -318,7 +318,7 @@ func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 			return writer.WriteBulk(nil)
 		}
 	} else {
-		err := insertOrUpdateString(command.Get(1), command.Get(2), expiry_millis, redis.db)
+		err := redis.strings.InsertOrUpdateString(command.Get(1), command.Get(2), expiry_millis)
 		if err == nil {
 			return writer.WriteBulkString("OK")
 		} else {
@@ -336,7 +336,7 @@ func (cmd *setexCommand) Execute(command *redisproto.Command, redis *PgRedis, wr
 	value := command.Get(3)
 	expiry_millis := expiry_secs * 1000
 
-	err := insertOrUpdateString(key, value, expiry_millis, redis.db)
+	err := redis.strings.InsertOrUpdateString(key, value, expiry_millis)
 	if err == nil {
 		return writer.WriteBulkString("OK")
 	} else {
@@ -351,7 +351,7 @@ func (cmd *psetexCommand) Execute(command *redisproto.Command, redis *PgRedis, w
 	key := command.Get(1)
 	expiry_millis, _ := strconv.Atoi(string(command.Get(2)))
 	value := command.Get(3)
-	err := insertOrUpdateString(key, value, expiry_millis, redis.db)
+	err := redis.strings.InsertOrUpdateString(key, value, expiry_millis)
 	if err == nil {
 		return writer.WriteBulkString("OK")
 	} else {
@@ -367,7 +367,7 @@ func (cmd *setnxCommand) Execute(command *redisproto.Command, redis *PgRedis, wr
 	value := command.Get(2)
 	expiry_millis := 0
 
-	updated, err := insertOrSkipString(key, value, expiry_millis, redis.db)
+	updated, err := redis.strings.InsertOrSkipString(key, value, expiry_millis)
 	if err == nil {
 		if updated {
 			return writer.WriteBulkString("OK")
@@ -383,9 +383,9 @@ func (cmd *setnxCommand) Execute(command *redisproto.Command, redis *PgRedis, wr
 type strlenCommand struct{}
 
 func (cmd *strlenCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
-	success, resp, err := getString(command.Get(1), redis.db)
+	success, resp, err := redis.strings.GetString(command.Get(1))
 	if success {
-		return writer.WriteInt(int64(len(resp.value)))
+		return writer.WriteInt(int64(len(resp.Value)))
 	} else if !success && err == nil {
 		return writer.WriteInt(0)
 	} else {

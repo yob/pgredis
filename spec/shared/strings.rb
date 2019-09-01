@@ -226,10 +226,32 @@ RSpec.shared_examples "strings" do
   end
 
   context "incr" do
-    it "increments a counter each time" do
-      expect(redis.incr("foo")).to eql(1)
-      expect(redis.incr("foo")).to eql(2)
-      expect(redis.incr("foo")).to eql(3)
+    context "when the key doesn't exist yet" do
+      it "increments a counter each time" do
+        expect(redis.incr("foo")).to eql(1)
+        expect(redis.incr("foo")).to eql(2)
+        expect(redis.incr("foo")).to eql(3)
+      end
+    end
+    context "when the key exists" do
+      before do
+        redis.set("foo", 3)
+      end
+      it "increments a counter each time" do
+        expect(redis.incr("foo")).to eql(4)
+        expect(redis.incr("foo")).to eql(5)
+      end
+    end
+    context "when the key exists but it's expired" do
+      before do
+        redis.set("foo", 10, px: 1) # almost insta expire
+        sleep(0.1)
+      end
+      it "increments a counter each time" do
+        expect(redis.incr("foo")).to eql(1)
+        expect(redis.incr("foo")).to eql(2)
+        expect(redis.incr("foo")).to eql(3)
+      end
     end
   end
 
@@ -250,11 +272,33 @@ RSpec.shared_examples "strings" do
   end
 
   context "decr" do
-    it "decrements a counter each time" do
-      redis.set("foo", 3)
-      expect(redis.decr("foo")).to eql(2)
-      expect(redis.decr("foo")).to eql(1)
-      expect(redis.decr("foo")).to eql(0)
+    context "when the key doesn't exist yet" do
+      it "decrements a counter each time" do
+        expect(redis.decr("foo")).to eql(-1)
+        expect(redis.decr("foo")).to eql(-2)
+        expect(redis.decr("foo")).to eql(-3)
+      end
+    end
+    context "when the key exists" do
+      before do
+        redis.set("foo", 3)
+      end
+      it "decrements a counter each time" do
+        expect(redis.decr("foo")).to eql(2)
+        expect(redis.decr("foo")).to eql(1)
+        expect(redis.decr("foo")).to eql(0)
+      end
+    end
+    context "when the key exists but it's expired" do
+      before do
+        redis.set("foo", 10, px: 1) # almost insta expire
+        sleep(0.1)
+      end
+      it "decrements a counter each time" do
+        expect(redis.decr("foo")).to eql(-1)
+        expect(redis.decr("foo")).to eql(-2)
+        expect(redis.decr("foo")).to eql(-3)
+      end
     end
   end
 

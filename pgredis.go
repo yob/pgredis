@@ -263,8 +263,8 @@ func insertOrAppendString(key []byte, value []byte, db *sql.DB) ([]byte, error) 
 func incrString(key []byte, by int, db *sql.DB) ([]byte, error) {
 	var finalValue []byte
 
-	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = ((cast(encode(redisdata.value,'escape') as integer)+$3)::text)::bytea RETURNING value"
-	err := db.QueryRow(sqlStat, key, by, by).Scan(&finalValue)
+	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as integer)+$4)::text)::bytea END , expires_at = NULL RETURNING value"
+	err := db.QueryRow(sqlStat, key, by, by, by).Scan(&finalValue)
 	if err != nil {
 		return nil, err
 	}
@@ -273,9 +273,12 @@ func incrString(key []byte, by int, db *sql.DB) ([]byte, error) {
 
 func decrString(key []byte, by int, db *sql.DB) ([]byte, error) {
 	var finalValue []byte
+	if by > 0 {
+		by = by * -1
+	}
 
-	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = ((cast(encode(redisdata.value,'escape') as integer)-$3)::text)::bytea RETURNING value"
-	err := db.QueryRow(sqlStat, key, by, by).Scan(&finalValue)
+	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as integer)+$4)::text)::bytea END, expires_at = NULL RETURNING value"
+	err := db.QueryRow(sqlStat, key, by, by, by).Scan(&finalValue)
 	if err != nil {
 		return nil, err
 	}

@@ -148,7 +148,17 @@ RSpec.shared_examples "strings" do
     end
 
     context "when the key already exists but it's expired" do
-      it "does not set the key"
+      before do
+        redis.set("foo", 10, px: 1) # almost insta expire
+        sleep(0.1)
+      end
+
+      it "does not set the key" do
+        expect(
+          redis.set("foo", "baz", xx: true)
+        ).to eql(false)
+        expect(redis.get("foo")).to eql(nil)
+      end
     end
 
     context "when the key does not already exists" do

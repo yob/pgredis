@@ -20,7 +20,6 @@ type PgRedis struct {
 	strings  *repositories.StringRepository
 }
 
-
 func NewPgRedis(connStr string) *PgRedis {
 	fmt.Println("Connecting to: ", connStr)
 	db, err := openDatabaseWithRetries(connStr, 3)

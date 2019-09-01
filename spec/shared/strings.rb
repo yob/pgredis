@@ -402,12 +402,11 @@ RSpec.shared_examples "strings" do
   end
 
   context "setbit" do
-    pending "changes the bit at the requested position" do
-      redis.set("foo", "a")
-
-      redis.setbit("foo", 6, 1)
-
-      expect(redis.get("foo")).to eql("c")
+    context "when the key exists" do
+      it "changes the bit at the requested position"
+    end
+    context "when the key doesn't exist" do
+      it "assumes a blank string and changes the bit at the requested position"
     end
   end
 

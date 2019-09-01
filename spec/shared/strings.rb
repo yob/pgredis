@@ -253,13 +253,27 @@ RSpec.shared_examples "strings" do
         expect(redis.incr("foo")).to eql(3)
       end
     end
+    context "when the key exists but it's not a number" do
+      it "does something"
+    end
   end
 
   context "incrby" do
-    it "increments a counter each time" do
-      expect(redis.incrby("foo", 1)).to eql(1)
-      expect(redis.incrby("foo", 2)).to eql(3)
-      expect(redis.incrby("foo", 3)).to eql(6)
+    context "when the key doesn't exist yet" do
+      it "increments a counter each time" do
+        expect(redis.incrby("foo", 1)).to eql(1)
+        expect(redis.incrby("foo", 2)).to eql(3)
+        expect(redis.incrby("foo", 3)).to eql(6)
+      end
+    end
+    context "when the key exists" do
+      it "increments it"
+    end
+    context "when the key exists by is expired" do
+      it "resets and increments it"
+    end
+    context "when the key exists but it's not a number" do
+      it "does something"
     end
   end
 
@@ -300,14 +314,34 @@ RSpec.shared_examples "strings" do
         expect(redis.decr("foo")).to eql(-3)
       end
     end
+    context "when the key exists but it's not a number" do
+      it "does something"
+    end
   end
 
   context "decrby" do
-    it "decrements a counter each time" do
-      redis.set("foo", 6)
-      expect(redis.decrby("foo", 3)).to eql(3)
-      expect(redis.decrby("foo", 2)).to eql(1)
-      expect(redis.decrby("foo", 1)).to eql(0)
+    context "when the key doesn't exist yet" do
+      it "decrements a counter each time" do
+        expect(redis.decrby("foo", 3)).to eql(-3)
+        expect(redis.decrby("foo", 2)).to eql(-5)
+        expect(redis.decrby("foo", 1)).to eql(-6)
+      end
+    end
+    context "when the key exists" do
+      before do
+        redis.set("foo", 6)
+      end
+      it "decrements a counter each time" do
+        expect(redis.decrby("foo", 3)).to eql(3)
+        expect(redis.decrby("foo", 2)).to eql(1)
+        expect(redis.decrby("foo", 1)).to eql(0)
+      end
+    end
+    context "when the key exists but is expired" do
+      it "resets and increments it"
+    end
+    context "when the key exists but it's not a number" do
+      it "does something"
     end
   end
 

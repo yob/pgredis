@@ -66,26 +66,20 @@ func (cmd *bitcountCommand) Execute(command *redisproto.Command, redis *PgRedis,
 		if end > len(result.value) {
 			end = len(result.value)
 		}
-		bytesToRead := end - start
+		bitsToRead := (end - start) * 8
 
 		byteReader := bytes.NewReader(result.value)
 		bitReader := bitreader.NewReader(byteReader)
 		bitReader.Skip(uint(start))
 		setCount := int64(0)
-		checkedCount := int64(0)
 
-		for {
-			checkedCount += 1
+		for i := 0; i < bitsToRead; i++ {
 			bitSet, bitErr := bitReader.Read1()
 			if bitErr != nil {
-				// this is never true, see https://github.com/32bitkid/bitreader/pull/2
 				break
 			}
 			if bitSet {
 				setCount += 1
-			}
-			if checkedCount >= int64(bytesToRead*8) {
-				break
 			}
 		}
 		return writer.WriteInt(setCount)

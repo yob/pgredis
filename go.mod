@@ -3,7 +3,7 @@ module pgredis
 go 1.12
 
 require (
-	github.com/32bitkid/bitreader v0.0.0-20180710164922-66b707e0f706
+	github.com/32bitkid/bitreader v0.0.0-20190826143208-adb7166c108c
 	github.com/google/pprof v0.0.0-20190723021845-34ac40c74b70 // indirect
 	github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6 // indirect
 	github.com/lib/pq v1.2.0

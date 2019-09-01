@@ -1,5 +1,7 @@
 github.com/32bitkid/bitreader v0.0.0-20180710164922-66b707e0f706 h1:kaeJjKUVtEiF0+EjX9q0XPyhX6VmFJRagHU07Noxjzo=
 github.com/32bitkid/bitreader v0.0.0-20180710164922-66b707e0f706/go.mod h1:/f3zY7lVofN23ZcM80fEiNJXjOZrPxRrsa6mLLleEKg=
+github.com/32bitkid/bitreader v0.0.0-20190826143208-adb7166c108c h1:BenAZjzeneEh9XKvPGm6NBpmgyNg2+DvyKMmUf3Hbf0=
+github.com/32bitkid/bitreader v0.0.0-20190826143208-adb7166c108c/go.mod h1:/f3zY7lVofN23ZcM80fEiNJXjOZrPxRrsa6mLLleEKg=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/google/pprof v0.0.0-20190723021845-34ac40c74b70 h1:XTnP8fJpa4Kvpw2qARB4KS9izqxPS0Sd92cDlY3uk+w=
 github.com/google/pprof v0.0.0-20190723021845-34ac40c74b70/go.mod h1:zfwlbNMJ+OItoe0UupaVj+oy1omPYYDuagoSzA8v9mc=

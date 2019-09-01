@@ -249,6 +249,20 @@ func (cmd *incrbyCommand) Execute(command *redisproto.Command, redis *PgRedis, w
 	}
 }
 
+type incrbyfloatCommand struct{}
+
+func (cmd *incrbyfloatCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	by, _ := strconv.ParseFloat(string(command.Get(2)), 64)
+	newValue, err := incrDecimalString(key, by, redis.db)
+	if err == nil {
+		return writer.WriteBulkString(string(newValue))
+	} else {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	}
+}
+
 type setCommand struct{}
 
 func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {

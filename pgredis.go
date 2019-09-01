@@ -57,23 +57,24 @@ func NewPgRedis(connStr string) *PgRedis {
 	return &PgRedis{
 		db: db,
 		commands: map[string]redisCommand{
-			"APPEND":   &appendCommand{},
-			"BITCOUNT": &bitcountCommand{},
-			"DECR":     &decrCommand{},
-			"DECRBY":   &decrbyCommand{},
-			"GET":      &getCommand{},
-			"GETBIT":   &getbitCommand{},
-			"GETRANGE": &getrangeCommand{},
-			"GETSET":   &getsetCommand{},
-			"INCR":     &incrCommand{},
-			"INCRBY":   &incrbyCommand{},
-			"PSETEX":   &psetexCommand{},
-			"SET":      &setCommand{},
-			"SETEX":    &setexCommand{},
-			"SETNX":    &setnxCommand{},
-			"STRLEN":   &strlenCommand{},
-			"TTL":      &ttlCommand{},
-			"FLUSHALL": &flushallCommand{},
+			"APPEND":      &appendCommand{},
+			"BITCOUNT":    &bitcountCommand{},
+			"DECR":        &decrCommand{},
+			"DECRBY":      &decrbyCommand{},
+			"GET":         &getCommand{},
+			"GETBIT":      &getbitCommand{},
+			"GETRANGE":    &getrangeCommand{},
+			"GETSET":      &getsetCommand{},
+			"INCR":        &incrCommand{},
+			"INCRBY":      &incrbyCommand{},
+			"INCRBYFLOAT": &incrbyfloatCommand{},
+			"PSETEX":      &psetexCommand{},
+			"SET":         &setCommand{},
+			"SETEX":       &setexCommand{},
+			"SETNX":       &setnxCommand{},
+			"STRLEN":      &strlenCommand{},
+			"TTL":         &ttlCommand{},
+			"FLUSHALL":    &flushallCommand{},
 		},
 	}
 }
@@ -264,6 +265,17 @@ func incrString(key []byte, by int, db *sql.DB) ([]byte, error) {
 	var finalValue []byte
 
 	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as integer)+$4)::text)::bytea END , expires_at = NULL RETURNING value"
+	err := db.QueryRow(sqlStat, key, by, by, by).Scan(&finalValue)
+	if err != nil {
+		return nil, err
+	}
+	return finalValue, nil
+}
+
+func incrDecimalString(key []byte, by float64, db *sql.DB) ([]byte, error) {
+	var finalValue []byte
+
+	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as decimal)+$4)::text)::bytea END, expires_at = NULL RETURNING value"
 	err := db.QueryRow(sqlStat, key, by, by, by).Scan(&finalValue)
 	if err != nil {
 		return nil, err

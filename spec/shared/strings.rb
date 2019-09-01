@@ -278,10 +278,36 @@ RSpec.shared_examples "strings" do
   end
 
   context "incrbyfloat" do
-    pending "increments a counter each time" do
-      expect(redis.incrbyfloat("foo", 1.23)).to eql(1.23)
-      expect(redis.incrbyfloat("foo", 0.77)).to eql(2.0)
-      expect(redis.incrbyfloat("foo", -0.1)).to eql(1.9)
+    context "when the key doesn't exist yet" do
+      it "increments a counter each time" do
+        expect(redis.incrbyfloat("foo", 1.23)).to eql(1.23)
+        expect(redis.incrbyfloat("foo", 0.77)).to eql(2.0)
+        expect(redis.incrbyfloat("foo", -0.1)).to eql(1.9)
+      end
+    end
+    context "when the key exists" do
+      before do
+        redis.set("foo", 3)
+      end
+      it "increments the value each time" do
+        expect(redis.incrbyfloat("foo", 1.23)).to eql(4.23)
+        expect(redis.incrbyfloat("foo", 0.77)).to eql(5.0)
+        expect(redis.incrbyfloat("foo", -0.1)).to eql(4.9)
+      end
+    end
+    context "when the key exists but it's expired" do
+      before do
+        redis.set("foo", 10, px: 1) # almost insta expire
+        sleep(0.1)
+      end
+      it "increments the value each time" do
+        expect(redis.incrbyfloat("foo", 1.23)).to eql(1.23)
+        expect(redis.incrbyfloat("foo", 0.77)).to eql(2.0)
+        expect(redis.incrbyfloat("foo", -0.1)).to eql(1.9)
+      end
+    end
+    context "when the key exists but it's not a number" do
+      it "does something"
     end
   end
 

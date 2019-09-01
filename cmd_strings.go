@@ -95,7 +95,7 @@ type decrCommand struct{}
 
 func (cmd *decrCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	key := command.Get(1)
-	newValue, err := decrString(key, 1, redis.db)
+	newValue, err := incrString(key, -1, redis.db)
 	if err == nil {
 		intValue, _ := strconv.Atoi(string(newValue))
 		return writer.WriteInt(int64(intValue))
@@ -110,7 +110,7 @@ type decrbyCommand struct{}
 func (cmd *decrbyCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	key := command.Get(1)
 	by, _ := strconv.Atoi(string(command.Get(2)))
-	newValue, err := decrString(key, by, redis.db)
+	newValue, err := incrString(key, by*-1, redis.db)
 	if err == nil {
 		intValue, _ := strconv.Atoi(string(newValue))
 		return writer.WriteInt(int64(intValue))

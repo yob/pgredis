@@ -8,7 +8,7 @@ type ttlCommand struct{}
 
 func (cmd *ttlCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	key := command.Get(1)
-	success, resp, err := redis.strings.GetString(key)
+	success, resp, err := redis.strings.Get(key)
 	if success && resp.WillExpire() {
 		return writer.WriteInt(resp.TTLInSeconds())
 	} else if success {

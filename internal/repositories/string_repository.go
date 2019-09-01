@@ -41,7 +41,7 @@ func NewStringRepository(db *sql.DB) *StringRepository {
 	}
 }
 
-func (repo *StringRepository) GetString(key []byte) (bool, RedisString, error) {
+func (repo *StringRepository) Get(key []byte) (bool, RedisString, error) {
 	result := RedisString{}
 	var expiresAt pq.NullTime
 
@@ -61,7 +61,7 @@ func (repo *StringRepository) GetString(key []byte) (bool, RedisString, error) {
 	}
 }
 
-func (repo *StringRepository) InsertOrUpdateString(key []byte, value []byte, expiry_millis int) (err error) {
+func (repo *StringRepository) InsertOrUpdate(key []byte, value []byte, expiry_millis int) (err error) {
 	if expiry_millis == 0 {
 		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, NULL) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, expires_at = NULL"
 		_, err = repo.db.Exec(sqlStat, key, value)
@@ -76,7 +76,7 @@ func (repo *StringRepository) InsertOrUpdateString(key []byte, value []byte, exp
 	return nil
 }
 
-func (repo *StringRepository) InsertOrSkipString(key []byte, value []byte, expiry_millis int) (inserted bool, err error) {
+func (repo *StringRepository) InsertOrSkip(key []byte, value []byte, expiry_millis int) (inserted bool, err error) {
 	// TODO delete any expired rows in the db with this key
 	var res sql.Result
 	if expiry_millis == 0 {
@@ -97,7 +97,7 @@ func (repo *StringRepository) InsertOrSkipString(key []byte, value []byte, expir
 	return inserted, nil
 }
 
-func (repo *StringRepository) UpdateOrSkipString(key []byte, value []byte, expiry_millis int) (updated bool, err error) {
+func (repo *StringRepository) UpdateOrSkip(key []byte, value []byte, expiry_millis int) (updated bool, err error) {
 	// TODO delete any expired rows in the db with this key
 	var res sql.Result
 	if expiry_millis == 0 {
@@ -118,7 +118,7 @@ func (repo *StringRepository) UpdateOrSkipString(key []byte, value []byte, expir
 	return false, nil
 }
 
-func (repo *StringRepository) InsertOrAppendString(key []byte, value []byte) ([]byte, error) {
+func (repo *StringRepository) InsertOrAppend(key []byte, value []byte) ([]byte, error) {
 	// TODO delete any expired rows in the db with this key
 	var finalValue []byte
 
@@ -130,7 +130,7 @@ func (repo *StringRepository) InsertOrAppendString(key []byte, value []byte) ([]
 	return finalValue, nil
 }
 
-func (repo *StringRepository) IncrString(key []byte, by int) ([]byte, error) {
+func (repo *StringRepository) Incr(key []byte, by int) ([]byte, error) {
 	var finalValue []byte
 
 	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as integer)+$4)::text)::bytea END , expires_at = NULL RETURNING value"
@@ -141,7 +141,7 @@ func (repo *StringRepository) IncrString(key []byte, by int) ([]byte, error) {
 	return finalValue, nil
 }
 
-func (repo *StringRepository) IncrDecimalString(key []byte, by float64) ([]byte, error) {
+func (repo *StringRepository) IncrDecimal(key []byte, by float64) ([]byte, error) {
 	var finalValue []byte
 
 	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as decimal)+$4)::text)::bytea END, expires_at = NULL RETURNING value"

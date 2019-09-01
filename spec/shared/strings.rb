@@ -397,6 +397,17 @@ RSpec.shared_examples "strings" do
         expect(redis.get("foo")).to eql("s1")
       end
     end
+    context "when the key already exists but it's expired" do
+      before do
+        redis.set("foo", "1", px: 1) # almost insta expire
+        sleep(0.1)
+      end
+
+      it "sets a new value" do
+        redis.append("foo", "2")
+        expect(redis.get("foo")).to eql("2")
+      end
+    end
     context "when the key doesn't exist" do
       it "starts a new value" do
         redis.append("foo", "1")

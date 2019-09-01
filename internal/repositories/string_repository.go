@@ -77,7 +77,18 @@ func (repo *StringRepository) InsertOrUpdate(key []byte, value []byte, expiry_mi
 }
 
 func (repo *StringRepository) InsertOrSkip(key []byte, value []byte, expiry_millis int) (inserted bool, err error) {
-	// TODO delete any expired rows in the db with this key
+	tx, err := repo.db.Begin()
+	if err != nil {
+		return false, err
+	}
+
+	// delete any expired rows in the db with this key
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	_, err = repo.db.Exec(sqlStat, key)
+	if err != nil {
+		return false, err
+	}
+
 	var res sql.Result
 	if expiry_millis == 0 {
 		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, NULL) ON CONFLICT (key) DO NOTHING"
@@ -92,8 +103,14 @@ func (repo *StringRepository) InsertOrSkip(key []byte, value []byte, expiry_mill
 		inserted = count > 0
 	}
 	if err != nil {
-		return inserted, err
+		return false, err
 	}
+
+	err = tx.Commit()
+	if err != nil {
+		return false, err
+	}
+
 	return inserted, nil
 }
 

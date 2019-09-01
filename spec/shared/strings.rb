@@ -470,7 +470,7 @@ RSpec.shared_examples "strings" do
   end
 
   context "mget" do
-    pending "returns an array of the requested values" do
+    it "returns an array of the requested values" do
       redis.set("foo", "s1")
       redis.set("bar", "s2")
 

@@ -68,6 +68,7 @@ func NewPgRedis(connStr string) *PgRedis {
 			"INCR":        &incrCommand{},
 			"INCRBY":      &incrbyCommand{},
 			"INCRBYFLOAT": &incrbyfloatCommand{},
+			"MGET":        &mgetCommand{},
 			"PSETEX":      &psetexCommand{},
 			"SET":         &setCommand{},
 			"SETEX":       &setexCommand{},

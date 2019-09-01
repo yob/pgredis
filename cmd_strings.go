@@ -263,6 +263,21 @@ func (cmd *incrbyfloatCommand) Execute(command *redisproto.Command, redis *PgRed
 	}
 }
 
+type mgetCommand struct{}
+
+func (cmd *mgetCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	result := make([]interface{}, command.ArgCount()-1)
+	for i := 1; i < command.ArgCount(); i++ {
+		// TODO calling getStrings in a loop like this returns the correct result, but is super
+		//      inefficient
+		success, resp, _ := getString(command.Get(i), redis.db)
+		if success {
+			result[i-1] = string(resp.value)
+		}
+	}
+	return writer.WriteObjectsSlice(result)
+}
+
 type setCommand struct{}
 
 func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {

@@ -18,6 +18,7 @@ import (
 type PgRedis struct {
 	commands map[string]redisCommand
 	strings  *repositories.StringRepository
+	lists    *repositories.ListRepository
 }
 
 func NewPgRedis(connStr string) *PgRedis {
@@ -35,6 +36,7 @@ func NewPgRedis(connStr string) *PgRedis {
 
 	return &PgRedis{
 		strings: repositories.NewStringRepository(db),
+		lists:   repositories.NewListRepository(db),
 		commands: map[string]redisCommand{
 			"APPEND":      &appendCommand{},
 			"BITCOUNT":    &bitcountCommand{},
@@ -48,6 +50,7 @@ func NewPgRedis(connStr string) *PgRedis {
 			"INCR":        &incrCommand{},
 			"INCRBY":      &incrbyCommand{},
 			"INCRBYFLOAT": &incrbyfloatCommand{},
+			"LLEN":        &llenCommand{},
 			"MGET":        &mgetCommand{},
 			"PING":        &pingCommand{},
 			"PSETEX":      &psetexCommand{},
@@ -100,6 +103,11 @@ func (redis *PgRedis) StartServer(bindAddress string, port string) error {
 
 func setupSchema(db *sql.DB) error {
 	_, err := db.Query("create table if not exists redisdata (key bytea PRIMARY KEY, value bytea not null, expires_at timestamp with time zone NULL)")
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Query("create table if not exists redislists (key bytea, idx integer, value bytea not null, PRIMARY KEY(key, idx), FOREIGN KEY (key) REFERENCES redisdata (key) ON DELETE CASCADE);")
 	if err != nil {
 		return err
 	}

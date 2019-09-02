@@ -5,6 +5,7 @@ RSpec.describe "realredis" do
 
   include_examples "connection"
   include_examples "strings"
+  include_examples "lists"
 end
 
 RSpec.describe "pgredis" do
@@ -12,4 +13,5 @@ RSpec.describe "pgredis" do
 
   include_examples "connection"
   include_examples "strings"
+  include_examples "lists"
 end

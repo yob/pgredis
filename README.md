@@ -60,7 +60,6 @@ bug in pgredis rather than the specs.
 
 ## TODO
 
-* spec and implement a few connection commands, like ECHO, PING and QUIT
 * spec and implement list commands (or at least the ones required by sidekiq)
 * improve stdout/stderr of the server
   * log in a consistent way

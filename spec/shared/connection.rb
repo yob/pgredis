@@ -18,5 +18,16 @@ RSpec.shared_examples "connection" do
     end
 
   end
+
+  context "echo" do
+    context "with an arg" do
+      it "returns the arg" do
+        expect(
+          redis.echo("Hi")
+        ).to eql("Hi")
+      end
+    end
+
+  end
 end
 

@@ -40,6 +40,7 @@ func NewPgRedis(connStr string) *PgRedis {
 			"BITCOUNT":    &bitcountCommand{},
 			"DECR":        &decrCommand{},
 			"DECRBY":      &decrbyCommand{},
+			"ECHO":        &echoCommand{},
 			"GET":         &getCommand{},
 			"GETBIT":      &getbitCommand{},
 			"GETRANGE":    &getrangeCommand{},

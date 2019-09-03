@@ -84,7 +84,7 @@ func (repo *StringRepository) InsertOrSkip(key []byte, value []byte, expiry_mill
 
 	// delete any expired rows in the db with this key
 	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
-	_, err = repo.db.Exec(sqlStat, key)
+	_, err = tx.Exec(sqlStat, key)
 	if err != nil {
 		return false, err
 	}
@@ -92,13 +92,13 @@ func (repo *StringRepository) InsertOrSkip(key []byte, value []byte, expiry_mill
 	var res sql.Result
 	if expiry_millis == 0 {
 		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, NULL) ON CONFLICT (key) DO NOTHING"
-		res, err = repo.db.Exec(sqlStat, key, value)
+		res, err = tx.Exec(sqlStat, key, value)
 		count, _ := res.RowsAffected()
 		inserted = count > 0
 	} else {
 		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, now() + cast($3 as interval)) ON CONFLICT DO NOTHING"
 		interval := fmt.Sprintf("%d milliseconds", expiry_millis)
-		res, err = repo.db.Exec(sqlStat, key, value, interval)
+		res, err = tx.Exec(sqlStat, key, value, interval)
 		count, _ := res.RowsAffected()
 		inserted = count > 0
 	}
@@ -122,7 +122,7 @@ func (repo *StringRepository) UpdateOrSkip(key []byte, value []byte, expiry_mill
 
 	// delete any expired rows in the db with this key
 	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
-	_, err = repo.db.Exec(sqlStat, key)
+	_, err = tx.Exec(sqlStat, key)
 	if err != nil {
 		return false, err
 	}
@@ -130,13 +130,13 @@ func (repo *StringRepository) UpdateOrSkip(key []byte, value []byte, expiry_mill
 	var res sql.Result
 	if expiry_millis == 0 {
 		sqlStat := "UPDATE redisdata SET value=$2, expires_at=NULL WHERE key=$1"
-		res, err = repo.db.Exec(sqlStat, key, value)
+		res, err = tx.Exec(sqlStat, key, value)
 		count, _ := res.RowsAffected()
 		updated = count > 0
 	} else {
 		sqlStat := "UPDATE redisdata SET value=$2, expires_at=now() + cast($3 as interval) WHERE key=$1"
 		interval := fmt.Sprintf("%d milliseconds", expiry_millis)
-		res, err = repo.db.Exec(sqlStat, key, value, interval)
+		res, err = tx.Exec(sqlStat, key, value, interval)
 		count, _ := res.RowsAffected()
 		updated = count > 0
 	}
@@ -162,13 +162,13 @@ func (repo *StringRepository) InsertOrAppend(key []byte, value []byte) ([]byte, 
 
 	// delete any expired rows in the db with this key
 	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
-	_, err = repo.db.Exec(sqlStat, key)
+	_, err = tx.Exec(sqlStat, key)
 	if err != nil {
 		return nil, err
 	}
 
 	sqlStat = "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = redisdata.value || EXCLUDED.value RETURNING value"
-	err = repo.db.QueryRow(sqlStat, key, value).Scan(&finalValue)
+	err = tx.QueryRow(sqlStat, key, value).Scan(&finalValue)
 	if err != nil {
 		return nil, err
 	}

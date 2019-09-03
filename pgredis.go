@@ -54,6 +54,7 @@ func NewPgRedis(connStr string) *PgRedis {
 			"MGET":        &mgetCommand{},
 			"PING":        &pingCommand{},
 			"PSETEX":      &psetexCommand{},
+			"RPUSH":       &rpushCommand{},
 			"SET":         &setCommand{},
 			"SETEX":       &setexCommand{},
 			"SETNX":       &setnxCommand{},

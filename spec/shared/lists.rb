@@ -10,7 +10,14 @@ RSpec.shared_examples "lists" do
       end
     end
     context "when the list exists with a single item" do
-      it "returns the list size"
+      before do
+        redis.rpush("foo", "bar")
+      end
+      it "returns the list size" do
+        expect(
+          redis.llen("foo")
+        ).to eql(1)
+      end
     end
 
   end

@@ -20,16 +20,11 @@ func (repo *ListRepository) Length(key []byte) (int, error) {
 	var count int
 
 	sqlStat := "SELECT count(*) FROM redisdata INNER JOIN redislists ON redisdata.key = redislists.key WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL)"
-	row := repo.db.QueryRow(sqlStat, key)
-
-	switch err := row.Scan(&count); err {
-	case sql.ErrNoRows:
-		return 0, nil
-	case nil:
-		return 0, nil
-	default:
-		return count, err
+	err := repo.db.QueryRow(sqlStat, key).Scan(&count)
+	if err != nil {
+		return 0, err
 	}
+	return count, nil
 }
 
 func (repo *ListRepository) RightPush(key []byte, values [][]byte) (int, error) {

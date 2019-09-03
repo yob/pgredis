@@ -4,4 +4,5 @@
 
 cd $(dirname $0)/..
 
-$(dirname $0)/psql psql -c "select encode(key, 'escape'), encode(value, 'escape'), expires_at from redisdata"
+$(dirname $0)/psql psql -c "select encode(key, 'escape') as key, encode(value, 'escape') as value, expires_at from redisdata order by key"
+$(dirname $0)/psql psql -c "select encode(key, 'escape') as key, idx, encode(value, 'escape') as value from redislists order by key, idx"

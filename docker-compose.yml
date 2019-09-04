@@ -28,7 +28,7 @@ services:
     command: ["psql"]
 
   dev:
-    image: golang:1.12.8-buster
+    image: golang:1.13.0-buster
     depends_on:
       - db
     volumes:
@@ -43,7 +43,7 @@ services:
       DATABASE_URL: "postgres://pgredis:fnord@db/pgredis?sslmode=disable"
 
   testserver:
-    image: golang:1.12.8-buster
+    image: golang:1.13.0-buster
     depends_on:
       - testdb
     volumes:

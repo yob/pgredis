@@ -17,6 +17,7 @@ import (
 
 type PgRedis struct {
 	commands map[string]redisCommand
+	keys     *repositories.KeyRepository
 	strings  *repositories.StringRepository
 	lists    *repositories.ListRepository
 }
@@ -39,6 +40,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 	}
 
 	return &PgRedis{
+		keys:    repositories.NewKeyRepository(db),
 		strings: repositories.NewStringRepository(db),
 		lists:   repositories.NewListRepository(db),
 		commands: map[string]redisCommand{
@@ -47,6 +49,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 			"DECR":        &decrCommand{},
 			"DECRBY":      &decrbyCommand{},
 			"ECHO":        &echoCommand{},
+			"EXPIRE":      &expireCommand{},
 			"GET":         &getCommand{},
 			"GETBIT":      &getbitCommand{},
 			"GETRANGE":    &getrangeCommand{},

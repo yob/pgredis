@@ -29,6 +29,12 @@ This project aims to:
 * avoid any support for redis clustering features. There's no need to cluster
   when you can have multiple instances accessing a shared database
 
+* Minimise (avoid completely, if possible) DB writes on any read command (GET,
+  MGET, LRANGE, etc). Keep reads as fast as possible, and pay the IO price on
+  writes (which are hopefully less frequent!). An example: expired keys remain in
+  the database, are ignored by read commands, and are only removed when a write
+  command notices them.
+
 ## Development
 
 There's not much here yet. To play along, install docker and start the server

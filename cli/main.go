@@ -44,9 +44,15 @@ func main() {
 					EnvVar:   "DATABASE_URL",
 					Required: true,
 				},
+				cli.IntFlag{
+					Name:     "max-connections",
+					Usage:    "the maximum number of database connections to open (default: 25)",
+					EnvVar:   "MAX_CONNECTIONS",
+					Value:    25,
+				},
 			},
 			Action: func(ctx *cli.Context) error {
-				server := pgredis.NewPgRedis(ctx.String("database"))
+				server := pgredis.NewPgRedis(ctx.String("database"), ctx.Int("max-connections"))
 				return server.StartServer(ctx.String("bind"), ctx.String("port"))
 			},
 		},

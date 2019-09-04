@@ -21,13 +21,17 @@ type PgRedis struct {
 	lists    *repositories.ListRepository
 }
 
-func NewPgRedis(connStr string) *PgRedis {
+func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 	fmt.Println("Connecting to: ", connStr)
 	db, err := openDatabaseWithRetries(connStr, 3)
 
 	if err != nil {
 		panic(err)
 	}
+
+	db.SetMaxOpenConns(maxConnections)
+
+	printDbStats(db)
 
 	err = setupSchema(db)
 	if err != nil {
@@ -160,4 +164,9 @@ func (redis *PgRedis) flushAll() error {
 		return err
 	}
 	return nil
+}
+
+func printDbStats(db *sql.DB) {
+	stats := db.Stats()
+	log.Printf("Database connection open with %d max connections", stats.MaxOpenConnections)
 }

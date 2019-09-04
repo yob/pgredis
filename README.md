@@ -57,14 +57,3 @@ is our reference implementation, so it is always right.
 
 If the real redis specs are green and a pgredis spec fails, then it's likely a
 bug in pgredis rather than the specs.
-
-## TODO
-
-* spec and implement list commands (or at least the ones required by sidekiq)
-* improve stdout/stderr of the server
-  * log in a consistent way
-  * add debug levels so it's possible to print full commands and responses if required
-  * don't print an error when clients disconnect
-* default to leaving some dangerous commands (like FLUSHALL) disabled. Allow the operator
-  to opt-in to enabling them with a CLI switch
-* Prometheas metrics endpoint?

@@ -28,6 +28,7 @@ type ttlCommand struct{}
 
 func (cmd *ttlCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	key := command.Get(1)
+	// this should probably use KeyRepository and not be string specific
 	success, resp, err := redis.strings.Get(key)
 	if success && resp.WillExpire() {
 		return writer.WriteInt(resp.TTLInSeconds())

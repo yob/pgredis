@@ -29,5 +29,12 @@ RSpec.shared_examples "connection" do
     end
 
   end
-end
 
+  context "quit" do
+    it "returns OK" do
+      expect(
+        redis.quit
+      ).to eql("OK")
+    end
+  end
+end

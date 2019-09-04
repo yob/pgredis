@@ -61,6 +61,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 			"MGET":        &mgetCommand{},
 			"PING":        &pingCommand{},
 			"PSETEX":      &psetexCommand{},
+			"QUIT":        &quitCommand{},
 			"RPUSH":       &rpushCommand{},
 			"SET":         &setCommand{},
 			"SETEX":       &setexCommand{},
@@ -123,8 +124,7 @@ func setupSchema(db *sql.DB) error {
 	return nil
 }
 
-func (redis *PgRedis) selectCmd(data []byte) redisCommand {
-	cmdString := strings.ToUpper(string(data))
+func (redis *PgRedis) selectCmd(cmdString string) redisCommand {
 	implementation := redis.commands[cmdString]
 	if implementation == nil {
 		implementation = &unrecognisedCommand{}
@@ -147,12 +147,15 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 				log.Println(err, " closed connection to ", conn.RemoteAddr())
 				break
 			}
-		} else {
-			cmd := redis.selectCmd(command.Get(0))
-			ew = cmd.Execute(command, redis, writer)
 		}
+		cmdString := strings.ToUpper(string(command.Get(0)))
+		cmd := redis.selectCmd(cmdString)
+		ew = cmd.Execute(command, redis, writer)
 		if command.IsLast() {
 			writer.Flush()
+		}
+		if cmdString == "QUIT" {
+			break
 		}
 		if ew != nil {
 			log.Println("Connection closed", ew)

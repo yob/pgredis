@@ -21,3 +21,9 @@ func (cmd *pingCommand) Execute(command *redisproto.Command, redis *PgRedis, wri
 		return writer.WriteBulkString(string(arg))
 	}
 }
+
+type quitCommand struct{}
+
+func (cmd *quitCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	return writer.WriteBulkString("OK")
+}

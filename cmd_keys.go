@@ -7,6 +7,24 @@ import (
 	"github.com/secmask/go-redisproto"
 )
 
+type delCommand struct{}
+
+func (cmd *delCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	result := int64(0)
+	for i := 1; i < command.ArgCount(); i++ {
+		// TODO calling Delete in a loop like this returns the correct result, but is super
+		//      inefficient. It'd be better to delete them in a single SQL call
+		success, err := redis.keys.Delete(command.Get(i))
+		if err != nil {
+			log.Println("ERROR: ", err.Error())
+		}
+		if success {
+			result += 1
+		}
+	}
+	return writer.WriteInt(result)
+}
+
 type expireCommand struct{}
 
 func (cmd *expireCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {

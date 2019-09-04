@@ -1,6 +1,55 @@
 # coding: utf-8
 
 RSpec.shared_examples "keys" do
+  context "del" do
+    context "when the key exists" do
+      before do
+        redis.set("foo", 1)
+        redis.set("bar", 2)
+      end
+      context "deleting a single key" do
+        it "returns 1" do
+          expect(
+            redis.del("foo")
+          ).to eql(1)
+        end
+      end
+      context "deleting two keys" do
+        it "returns 2" do
+          expect(
+            redis.del("foo","bar")
+          ).to eql(2)
+        end
+      end
+
+      it "sets an expiry on the key" do
+        redis.expire("foo", 10)
+        expect(redis.ttl("foo")).to be_between(0, 10)
+      end
+    end
+
+    context "when the key already exists but it's expired" do
+      before do
+        redis.set("foo", 1, px: 1) # almost insta expire
+        sleep(0.1)
+      end
+
+      it "returns 0" do
+        expect(
+          redis.del("foo")
+        ).to eql(0)
+      end
+    end
+
+    context "when the key does not exist" do
+      it "returns 0" do
+        expect(
+          redis.del("foo")
+        ).to eql(0)
+      end
+    end
+  end
+
   context "expire" do
     context "when the key exists" do
       before do

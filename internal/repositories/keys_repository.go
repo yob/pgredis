@@ -16,6 +16,39 @@ func NewKeyRepository(db *sql.DB) *KeyRepository {
 	}
 }
 
+func (repo *KeyRepository) Delete(key []byte) (updated bool, err error) {
+	tx, err := repo.db.Begin()
+	if err != nil {
+		return false, err
+	}
+
+	// delete any expired rows in the db with this key
+	// we do this first so the count we return at the end doesn't include these rows
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	_, err = tx.Exec(sqlStat, key)
+	if err != nil {
+		return false, err
+	}
+
+	sqlStat = "DELETE FROM redisdata WHERE key=$1"
+	res, err := tx.Exec(sqlStat, key)
+	if err != nil {
+		return false, err
+	}
+	count, err := res.RowsAffected()
+
+	if err != nil {
+		return false, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
 func (repo *KeyRepository) SetExpire(key []byte, expiry_millis int) (updated bool, err error) {
 	if expiry_millis <= 0 {
 		return false, errors.New("expiry must be 1ms or more")

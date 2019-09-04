@@ -90,12 +90,12 @@ func openDatabaseWithRetries(connStr string, retries int) (*sql.DB, error) {
 	return db, nil
 }
 
-func (redis *PgRedis) StartServer(bindAddress string, port string) error {
-	listener, err := net.Listen("tcp", bindAddress+":"+port)
+func (redis *PgRedis) StartServer(bindAddress string, port int) error {
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", bindAddress, port))
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("pgredis started on " + bindAddress + ":" + port)
+	log.Print(fmt.Sprintf("pgredis started on %s:%d", bindAddress, port))
 	for {
 		conn, err := listener.Accept()
 		if err != nil {

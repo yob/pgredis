@@ -33,10 +33,10 @@ func main() {
 					Usage: "IP address to listen on",
 					Value: "0.0.0.0",
 				},
-				cli.StringFlag{
+				cli.IntFlag{
 					Name:  "port, p",
 					Usage: "the port to listen on",
-					Value: "6379",
+					Value: 6379,
 				},
 				cli.StringFlag{
 					Name:     "database",
@@ -53,7 +53,7 @@ func main() {
 			},
 			Action: func(ctx *cli.Context) error {
 				server := pgredis.NewPgRedis(ctx.String("database"), ctx.Int("max-connections"))
-				return server.StartServer(ctx.String("bind"), ctx.String("port"))
+				return server.StartServer(ctx.String("bind"), ctx.Int("port"))
 			},
 		},
 	}

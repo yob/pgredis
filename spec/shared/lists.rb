@@ -22,6 +22,42 @@ RSpec.shared_examples "lists" do
 
   end
 
+  context "lpush" do
+    context "when the list doesn't exist" do
+      context "pushing a single item" do
+        it "creates the list on demand and returns the new size" do
+          expect(
+            redis.lpush("foo", "bar")
+          ).to eql(1)
+        end
+      end
+    end
+    context "when the list exists with a single item" do
+      before do
+        redis.lpush("foo", "bar")
+      end
+
+      context "pushing a single item" do
+        it "returns the new size" do
+          expect(
+            redis.lpush("foo", "baz")
+          ).to eql(2)
+        end
+        it "appends the new value to the end of the list"
+      end
+
+      context "pushing multiple items" do
+        it "returns the new size" do
+          expect(
+            redis.lpush("foo", ["baz", "boo"])
+          ).to eql(3)
+        end
+        it "appends the new value to the end of the list"
+      end
+    end
+
+  end
+
   context "rpush" do
     context "when the list doesn't exist" do
       context "pushing a single item" do

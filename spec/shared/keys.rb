@@ -50,6 +50,46 @@ RSpec.shared_examples "keys" do
     end
   end
 
+  context "exists" do
+    before do
+      redis.set("foo", 1)
+      redis.set("bar", 2)
+      redis.set("baz", 3, px: 1) # almost insta expire
+      sleep(0.1)
+    end
+    context "when the key exists" do
+      it "returns 1" do
+        expect( redis.exists("foo") ).to eql(true)
+      end
+    end
+
+    context "when multiple keys exists" do
+      # redis 3.0+ supports multiple key arguments, but the ruby library we're using doesn't
+      pending "returns 2" do
+        expect( redis.exists("foo", "bar") ).to eql(2)
+      end
+    end
+
+    context "when the keys exists it it's requestde multiple times" do
+      # redis 3.0+ supports multiple key arguments, but the ruby library we're using doesn't
+      pending "returns 2" do
+        expect( redis.exists("foo", "foo") ).to eql(2)
+      end
+    end
+
+    context "when the key doesn' exists" do
+      it "returns 0" do
+        expect( redis.exists("wow") ).to eql(false)
+      end
+    end
+
+    context "when the key exists but it's expired" do
+      it "returns 0" do
+        expect( redis.exists("baz") ).to eql(false)
+      end
+    end
+  end
+
   context "expire" do
     context "when the key exists" do
       before do

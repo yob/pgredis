@@ -25,6 +25,22 @@ func (cmd *delCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 	return writer.WriteInt(result)
 }
 
+type existsCommand struct{}
+
+func (cmd *existsCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	result := int64(0)
+	for i := 1; i < command.ArgCount(); i++ {
+		success, err := redis.keys.Exist(command.Get(i))
+		if err != nil {
+			log.Println("ERROR: ", err.Error())
+		}
+		if success {
+			result += 1
+		}
+	}
+	return writer.WriteInt(result)
+}
+
 type expireCommand struct{}
 
 func (cmd *expireCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {

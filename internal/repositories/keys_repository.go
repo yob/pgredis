@@ -49,6 +49,17 @@ func (repo *KeyRepository) Delete(key []byte) (updated bool, err error) {
 	return count > 0, nil
 }
 
+func (repo *KeyRepository) Exist(key []byte) (bool, error) {
+	var count int
+
+	sqlStat := "SELECT count(*) FROM redisdata WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL)"
+	err := repo.db.QueryRow(sqlStat, key).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 func (repo *KeyRepository) SetExpire(key []byte, expiry_millis int) (updated bool, err error) {
 	if expiry_millis <= 0 {
 		return false, errors.New("expiry must be 1ms or more")

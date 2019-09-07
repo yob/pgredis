@@ -43,7 +43,12 @@ RSpec.shared_examples "lists" do
             redis.lpush("foo", "baz")
           ).to eql(2)
         end
-        it "appends the new value to the end of the list"
+        it "appends the new value to the start of the list" do
+          redis.lpush("foo", "baz")
+          expect(
+            redis.lrange("foo", 0, -1)
+          ).to eql(["baz", "bar"])
+        end
       end
 
       context "pushing multiple items" do
@@ -52,7 +57,12 @@ RSpec.shared_examples "lists" do
             redis.lpush("foo", ["baz", "boo"])
           ).to eql(3)
         end
-        it "appends the new value to the end of the list"
+        it "appends the new value to the start of the list" do
+          redis.lpush("foo", ["baz", "boo"])
+          expect(
+            redis.lrange("foo", 0, -1)
+          ).to eql(["boo", "baz", "bar"])
+        end
       end
     end
 
@@ -170,7 +180,12 @@ RSpec.shared_examples "lists" do
             redis.rpush("foo", "baz")
           ).to eql(2)
         end
-        it "appends the new value to the end of the list"
+        it "appends the new value to the end of the list" do
+          redis.rpush("foo", "baz")
+          expect(
+            redis.lrange("foo", 0, -1)
+          ).to eql(["bar","baz"])
+        end
       end
 
       context "pushing multiple items" do
@@ -179,7 +194,12 @@ RSpec.shared_examples "lists" do
             redis.rpush("foo", ["baz", "boo"])
           ).to eql(3)
         end
-        it "appends the new value to the end of the list"
+        it "appends the new values to the end of the list" do
+          redis.rpush("foo", ["baz", "boo"])
+          expect(
+            redis.lrange("foo", 0, -1)
+          ).to eql(["bar","baz","boo"])
+        end
       end
     end
 

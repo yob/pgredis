@@ -20,6 +20,7 @@ type PgRedis struct {
 	keys     *repositories.KeyRepository
 	strings  *repositories.StringRepository
 	lists    *repositories.ListRepository
+	sets     *repositories.SetRepository
 }
 
 func NewPgRedis(connStr string, maxConnections int) *PgRedis {
@@ -43,6 +44,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 		keys:    repositories.NewKeyRepository(db),
 		strings: repositories.NewStringRepository(db),
 		lists:   repositories.NewListRepository(db),
+		sets:    repositories.NewSetRepository(db),
 		commands: map[string]redisCommand{
 			"APPEND":      &appendCommand{},
 			"BITCOUNT":    &bitcountCommand{},
@@ -68,6 +70,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 			"PSETEX":      &psetexCommand{},
 			"QUIT":        &quitCommand{},
 			"RPUSH":       &rpushCommand{},
+			"SADD":        &saddCommand{},
 			"SET":         &setCommand{},
 			"SETEX":       &setexCommand{},
 			"SETNX":       &setnxCommand{},
@@ -123,6 +126,11 @@ func setupSchema(db *sql.DB) error {
 	}
 
 	_, err = db.Query("create table if not exists redislists (key bytea, idx integer, value bytea not null, PRIMARY KEY(key, idx), FOREIGN KEY (key) REFERENCES redisdata (key) ON DELETE CASCADE);")
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Query("create table if not exists redissets (key bytea, value bytea not null, PRIMARY KEY(key, value), FOREIGN KEY (key) REFERENCES redisdata (key) ON DELETE CASCADE);")
 	if err != nil {
 		return err
 	}

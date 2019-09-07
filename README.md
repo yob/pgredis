@@ -5,7 +5,7 @@ and golang.  It is not in production anywhere, and I take no responsibility for
 it.
 
 A server that talks the redis protocol to clients, and stores all data in a
-postgres table.
+postgres database.
 
 This is (presumably) doing to be much slower than keeping the data in memory
 like real-redis, but sometimes keeping the data safe and replicated is more

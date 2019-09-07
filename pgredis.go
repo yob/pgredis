@@ -61,6 +61,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 			"INCRBYFLOAT": &incrbyfloatCommand{},
 			"LLEN":        &llenCommand{},
 			"LPUSH":       &lpushCommand{},
+			"LRANGE":      &lrangeCommand{},
 			"MGET":        &mgetCommand{},
 			"MSET":        &msetCommand{},
 			"PING":        &pingCommand{},

@@ -32,6 +32,84 @@ func (repo *ListRepository) LeftPush(key []byte, values [][]byte) (int, error) {
 	return repo.push(key, "left", values)
 }
 
+func (repo *ListRepository) Lrange(key []byte, start int, end int) ([]string, error) {
+	var listLength int
+	result := make([]string, 0)
+
+	tx, err := repo.db.Begin()
+	if err != nil {
+		return result, err
+	}
+
+	sqlStat := "SELECT count(*) FROM redisdata INNER JOIN redislists ON redisdata.key = redislists.key WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL)"
+	err = tx.QueryRow(sqlStat, key).Scan(&listLength)
+	if err != nil {
+		return result, err
+	}
+
+	// start normalise start/end values
+	if start < 0 {
+		start = listLength + start
+	}
+
+	if end < 0 {
+		end = listLength + end
+	}
+
+	//end += 1
+
+	if start < 0 {
+		start = 0
+	}
+
+	if end < start {
+		end = start
+	}
+	// end normalise start/end values
+
+	// The start and end values we have assume a zero-indexed list, but in the database our index values aren't zero indexed.
+	// This uses a CTE to select the list values and assign an in-memory zero-index that we can select on
+	sqlStat = `
+		WITH sublist AS (
+			SELECT redislists.value,
+			ROW_NUMBER () OVER (ORDER BY idx)-1 as row
+			FROM redisdata INNER JOIN redislists ON redisdata.key = redislists.key
+			WHERE redisdata.key = $1 AND
+				(redisdata.expires_at > now() OR expires_at IS NULL)
+			)
+		SELECT value
+		FROM sublist
+		WHERE (row BETWEEN $2 AND $3)
+		ORDER BY row
+	`
+	rows, err := tx.Query(sqlStat, key, start, end)
+	if err != nil {
+		return result, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var value string
+		err = rows.Scan(&value)
+		if err != nil {
+			return result, err
+		}
+		result = append(result, value)
+	}
+	err = rows.Err()
+	if err != nil {
+		return result, err
+	}
+
+	// save our work, release all locks
+	err = tx.Commit()
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
+}
+
 func (repo *ListRepository) RightPush(key []byte, values [][]byte) (int, error) {
 	return repo.push(key, "right", values)
 }

@@ -2,6 +2,7 @@ package pgredis
 
 import (
 	"log"
+	"strconv"
 
 	"github.com/secmask/go-redisproto"
 )
@@ -31,6 +32,21 @@ func (cmd *lpushCommand) Execute(command *redisproto.Command, redis *PgRedis, wr
 		return writer.WriteBulk(nil)
 	}
 	return writer.WriteInt(int64(newLength))
+}
+
+type lrangeCommand struct{}
+
+func (cmd *lrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	start, _ := strconv.Atoi(string(command.Get(2)))
+	end, _ := strconv.Atoi(string(command.Get(3)))
+	items, err := redis.lists.Lrange(key, start, end)
+	if err == nil {
+		return writer.WriteBulkStrings(items)
+	} else {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	}
 }
 
 type rpushCommand struct{}

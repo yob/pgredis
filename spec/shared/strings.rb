@@ -508,7 +508,22 @@ RSpec.shared_examples "strings" do
   end
 
   context "mset" do
-    it "does stuff"
+    context "with a single key/value" do
+      it "sets the key and returns OK" do
+        expect(redis.mset("foo", "bar")).to eql("OK")
+
+        expect(redis.get("foo")).to eql("bar")
+      end
+    end
+
+    context "with multiple key/values" do
+      it "sets the keys and returns OK" do
+        expect(redis.mset("foo", "1", "bar", "2")).to eql("OK")
+
+        expect(redis.get("foo")).to eql("1")
+        expect(redis.get("bar")).to eql("2")
+      end
+    end
   end
 
   context "msetnx" do

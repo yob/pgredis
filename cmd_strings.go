@@ -278,6 +278,25 @@ func (cmd *mgetCommand) Execute(command *redisproto.Command, redis *PgRedis, wri
 	return writer.WriteObjectsSlice(result)
 }
 
+type msetCommand struct{}
+
+func (cmd *msetCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	// TODO Using string because I can't use byte slices as a map key, but this probably breaks
+	// some compatibility with redis
+	items := make(map[string]string)
+	for i := 1; i < command.ArgCount(); i += 2 {
+		items[string(command.Get(i))] = string(command.Get(i + 1))
+	}
+	log.Printf("items: %v\n", items)
+	err := redis.strings.InsertOrUpdateMultiple(items)
+	if err == nil {
+		return writer.WriteBulkString("OK")
+	} else {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	}
+}
+
 type setCommand struct{}
 
 func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {

@@ -62,6 +62,8 @@ func (repo *StringRepository) Get(key []byte) (bool, RedisString, error) {
 }
 
 func (repo *StringRepository) InsertOrUpdate(key []byte, value []byte, expiry_millis int) (err error) {
+	// TODO consider merging this into InsertOrUpdateMultiple. Insterting one thing is just a specical
+	// case of inserting many things
 	if expiry_millis == 0 {
 		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, NULL) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, expires_at = NULL"
 		_, err = repo.db.Exec(sqlStat, key, value)
@@ -70,6 +72,28 @@ func (repo *StringRepository) InsertOrUpdate(key []byte, value []byte, expiry_mi
 		interval := fmt.Sprintf("%d milliseconds", expiry_millis)
 		_, err = repo.db.Exec(sqlStat, key, value, interval)
 	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (repo *StringRepository) InsertOrUpdateMultiple(items map[string]string) (err error) {
+	tx, err := repo.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	for key, value := range items {
+		// TODO could we do this in a single SQL statement?
+		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, NULL) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, expires_at = NULL"
+		_, err = tx.Exec(sqlStat, key, value)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = tx.Commit()
 	if err != nil {
 		return err
 	}

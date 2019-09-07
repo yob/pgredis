@@ -7,7 +7,7 @@ import (
 )
 
 type ListRepository struct {
-	db       *sql.DB
+	db *sql.DB
 }
 
 func NewListRepository(db *sql.DB) *ListRepository {

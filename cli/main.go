@@ -45,10 +45,10 @@ func main() {
 					Required: true,
 				},
 				cli.IntFlag{
-					Name:     "max-connections",
-					Usage:    "the maximum number of database connections to open (default: 25)",
-					EnvVar:   "MAX_CONNECTIONS",
-					Value:    25,
+					Name:   "max-connections",
+					Usage:  "the maximum number of database connections to open (default: 25)",
+					EnvVar: "MAX_CONNECTIONS",
+					Value:  25,
 				},
 			},
 			Action: func(ctx *cli.Context) error {

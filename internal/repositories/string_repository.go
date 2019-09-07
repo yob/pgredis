@@ -32,7 +32,7 @@ func (str *RedisString) WillExpire() bool {
 }
 
 type StringRepository struct {
-	db       *sql.DB
+	db *sql.DB
 }
 
 func NewStringRepository(db *sql.DB) *StringRepository {

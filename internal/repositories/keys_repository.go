@@ -7,7 +7,7 @@ import (
 )
 
 type KeyRepository struct {
-	db       *sql.DB
+	db *sql.DB
 }
 
 func NewKeyRepository(db *sql.DB) *KeyRepository {
@@ -79,4 +79,3 @@ func (repo *KeyRepository) SetExpire(key []byte, expiry_millis int) (updated boo
 	}
 	return updated, nil
 }
-

@@ -65,10 +65,10 @@ func (repo *StringRepository) InsertOrUpdate(key []byte, value []byte, expiry_mi
 	// TODO consider merging this into InsertOrUpdateMultiple. Insterting one thing is just a specical
 	// case of inserting many things
 	if expiry_millis == 0 {
-		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, NULL) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, expires_at = NULL"
+		sqlStat := "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, NULL) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = NULL"
 		_, err = repo.db.Exec(sqlStat, key, value)
 	} else {
-		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, now() + cast($3 as interval)) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, expires_at = EXCLUDED.expires_at"
+		sqlStat := "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, now() + cast($3 as interval)) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = EXCLUDED.expires_at"
 		interval := fmt.Sprintf("%d milliseconds", expiry_millis)
 		_, err = repo.db.Exec(sqlStat, key, value, interval)
 	}
@@ -86,7 +86,7 @@ func (repo *StringRepository) InsertOrUpdateMultiple(items map[string]string) (e
 
 	for key, value := range items {
 		// TODO could we do this in a single SQL statement?
-		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, NULL) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, expires_at = NULL"
+		sqlStat := "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, NULL) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = NULL"
 		_, err = tx.Exec(sqlStat, key, value)
 		if err != nil {
 			return err
@@ -115,12 +115,12 @@ func (repo *StringRepository) InsertOrSkip(key []byte, value []byte, expiry_mill
 
 	var res sql.Result
 	if expiry_millis == 0 {
-		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, NULL) ON CONFLICT (key) DO NOTHING"
+		sqlStat := "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, NULL) ON CONFLICT (key) DO NOTHING"
 		res, err = tx.Exec(sqlStat, key, value)
 		count, _ := res.RowsAffected()
 		inserted = count > 0
 	} else {
-		sqlStat := "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, $2, now() + cast($3 as interval)) ON CONFLICT DO NOTHING"
+		sqlStat := "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, now() + cast($3 as interval)) ON CONFLICT DO NOTHING"
 		interval := fmt.Sprintf("%d milliseconds", expiry_millis)
 		res, err = tx.Exec(sqlStat, key, value, interval)
 		count, _ := res.RowsAffected()
@@ -153,12 +153,12 @@ func (repo *StringRepository) UpdateOrSkip(key []byte, value []byte, expiry_mill
 
 	var res sql.Result
 	if expiry_millis == 0 {
-		sqlStat := "UPDATE redisdata SET value=$2, expires_at=NULL WHERE key=$1"
+		sqlStat := "UPDATE redisdata SET type='string', value=$2, expires_at=NULL WHERE key=$1"
 		res, err = tx.Exec(sqlStat, key, value)
 		count, _ := res.RowsAffected()
 		updated = count > 0
 	} else {
-		sqlStat := "UPDATE redisdata SET value=$2, expires_at=now() + cast($3 as interval) WHERE key=$1"
+		sqlStat := "UPDATE redisdata SET type='string', value=$2, expires_at=now() + cast($3 as interval) WHERE key=$1"
 		interval := fmt.Sprintf("%d milliseconds", expiry_millis)
 		res, err = tx.Exec(sqlStat, key, value, interval)
 		count, _ := res.RowsAffected()
@@ -191,7 +191,7 @@ func (repo *StringRepository) InsertOrAppend(key []byte, value []byte) ([]byte, 
 		return nil, err
 	}
 
-	sqlStat = "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = redisdata.value || EXCLUDED.value RETURNING value"
+	sqlStat = "INSERT INTO redisdata(key, type, value) VALUES ($1, 'string', $2) ON CONFLICT (key) DO UPDATE SET type = 'string', value = redisdata.value || EXCLUDED.value RETURNING value"
 	err = tx.QueryRow(sqlStat, key, value).Scan(&finalValue)
 	if err != nil {
 		return nil, err
@@ -208,7 +208,7 @@ func (repo *StringRepository) InsertOrAppend(key []byte, value []byte) ([]byte, 
 func (repo *StringRepository) Incr(key []byte, by int) ([]byte, error) {
 	var finalValue []byte
 
-	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as integer)+$4)::text)::bytea END , expires_at = NULL RETURNING value"
+	sqlStat := "INSERT INTO redisdata(key, type, value) VALUES ($1, 'string', $2) ON CONFLICT (key) DO UPDATE SET type='string', value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as integer)+$4)::text)::bytea END , expires_at = NULL RETURNING value"
 	err := repo.db.QueryRow(sqlStat, key, by, by, by).Scan(&finalValue)
 	if err != nil {
 		return nil, err
@@ -219,7 +219,7 @@ func (repo *StringRepository) Incr(key []byte, by int) ([]byte, error) {
 func (repo *StringRepository) IncrDecimal(key []byte, by float64) ([]byte, error) {
 	var finalValue []byte
 
-	sqlStat := "INSERT INTO redisdata(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as decimal)+$4)::text)::bytea END, expires_at = NULL RETURNING value"
+	sqlStat := "INSERT INTO redisdata(key, type, value) VALUES ($1, 'string', $2) ON CONFLICT (key) DO UPDATE SET type='string', value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as decimal)+$4)::text)::bytea END, expires_at = NULL RETURNING value"
 	err := repo.db.QueryRow(sqlStat, key, by, by, by).Scan(&finalValue)
 	if err != nil {
 		return nil, err

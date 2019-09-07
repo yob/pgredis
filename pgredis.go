@@ -71,6 +71,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 			"SETNX":       &setnxCommand{},
 			"STRLEN":      &strlenCommand{},
 			"TTL":         &ttlCommand{},
+			"TYPE":        &typeCommand{},
 			"FLUSHALL":    &flushallCommand{},
 		},
 	}
@@ -114,7 +115,7 @@ func (redis *PgRedis) StartServer(bindAddress string, port int) error {
 }
 
 func setupSchema(db *sql.DB) error {
-	_, err := db.Query("create table if not exists redisdata (key bytea PRIMARY KEY, value bytea not null, expires_at timestamp with time zone NULL)")
+	_, err := db.Query("create table if not exists redisdata (key bytea PRIMARY KEY, type bytea not null, value bytea not null, expires_at timestamp with time zone NULL)")
 	if err != nil {
 		return err
 	}

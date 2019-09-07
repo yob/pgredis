@@ -74,3 +74,19 @@ func (cmd *ttlCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 		panic(err) // TODO ergh
 	}
 }
+
+type typeCommand struct{}
+
+func (cmd *typeCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	result, err := redis.keys.Type(key)
+	if err != nil {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	}
+	if result != "" {
+		return writer.WriteBulkString(result)
+	} else {
+		return writer.WriteBulkString("none")
+	}
+}

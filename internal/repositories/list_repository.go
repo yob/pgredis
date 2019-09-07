@@ -43,7 +43,7 @@ func (repo *ListRepository) RightPush(key []byte, values [][]byte) (int, error) 
 	}
 
 	// ensure the db has a current key
-	sqlStat = "INSERT INTO redisdata(key, value, expires_at) VALUES ($1, '', NULL) ON CONFLICT (key) DO NOTHING"
+	sqlStat = "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'list', '', NULL) ON CONFLICT (key) DO NOTHING"
 	_, err = tx.Exec(sqlStat, key)
 
 	if err != nil {

@@ -178,4 +178,62 @@ RSpec.shared_examples "keys" do
       it "returns the time to live"
     end
   end
+
+  context "type" do
+    context "when the key does not exist" do
+      it "returns none" do
+        expect(
+          redis.type("foo")
+        ).to eql("none")
+      end
+    end
+    context "when a string key exists" do
+      before do
+        redis.set("foo", "bar")
+      end
+      it "returns string" do
+        expect(
+          redis.type("foo")
+        ).to eql("string")
+      end
+    end
+    context "when a string key exists but it has expired" do
+      before do
+        redis.set("foo", "bar", px: 1) # almost insta expire
+        sleep(0.1)
+      end
+      it "returns none" do
+        expect(
+          redis.type("foo")
+        ).to eql("none")
+      end
+    end
+
+    context "when a list key exists" do
+      before do
+        redis.rpush("foo", "bar")
+      end
+      it "returns list" do
+        expect(
+          redis.type("foo")
+        ).to eql("list")
+      end
+    end
+
+    context "when a set key exists" do
+      it "returns set"
+    end
+
+    context "when a sorted set key exists" do
+      it "returns zset"
+    end
+
+    context "when a hash key exists" do
+      it "returns hash"
+    end
+
+    context "when a stream key exists" do
+      it "returns stream"
+    end
+  end
 end

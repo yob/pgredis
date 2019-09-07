@@ -79,3 +79,19 @@ func (repo *KeyRepository) SetExpire(key []byte, expiry_millis int) (updated boo
 	}
 	return updated, nil
 }
+
+func (repo *KeyRepository) Type(key []byte) (string, error) {
+	var keyType string
+
+	sqlStat := "SELECT type FROM redisdata WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL)"
+	row := repo.db.QueryRow(sqlStat, key)
+
+	switch err := row.Scan(&keyType); err {
+	case sql.ErrNoRows:
+		return "", nil
+	case nil:
+		return keyType, nil
+	default:
+		return "", err
+	}
+}

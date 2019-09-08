@@ -16,11 +16,12 @@ import (
 )
 
 type PgRedis struct {
-	commands map[string]redisCommand
-	keys     *repositories.KeyRepository
-	strings  *repositories.StringRepository
-	lists    *repositories.ListRepository
-	sets     *repositories.SetRepository
+	commands   map[string]redisCommand
+	keys       *repositories.KeyRepository
+	strings    *repositories.StringRepository
+	lists      *repositories.ListRepository
+	sets       *repositories.SetRepository
+	sortedsets *repositories.SortedSetRepository
 }
 
 func NewPgRedis(connStr string, maxConnections int) *PgRedis {
@@ -41,10 +42,11 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 	}
 
 	return &PgRedis{
-		keys:    repositories.NewKeyRepository(db),
-		strings: repositories.NewStringRepository(db),
-		lists:   repositories.NewListRepository(db),
-		sets:    repositories.NewSetRepository(db),
+		keys:       repositories.NewKeyRepository(db),
+		strings:    repositories.NewStringRepository(db),
+		lists:      repositories.NewListRepository(db),
+		sets:       repositories.NewSetRepository(db),
+		sortedsets: repositories.NewSortedSetRepository(db),
 		commands: map[string]redisCommand{
 			"APPEND":      &appendCommand{},
 			"BITCOUNT":    &bitcountCommand{},
@@ -79,6 +81,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 			"TTL":         &ttlCommand{},
 			"TYPE":        &typeCommand{},
 			"FLUSHALL":    &flushallCommand{},
+			"ZADD":        &zaddCommand{},
 		},
 	}
 }
@@ -132,6 +135,11 @@ func setupSchema(db *sql.DB) error {
 	}
 
 	_, err = db.Query("create table if not exists redissets (key bytea, value bytea not null, PRIMARY KEY(key, value), FOREIGN KEY (key) REFERENCES redisdata (key) ON DELETE CASCADE);")
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Query("create table if not exists rediszsets (key bytea, value bytea not null, score decimal not null, PRIMARY KEY(key, value), FOREIGN KEY (key) REFERENCES redisdata (key) ON DELETE CASCADE);")
 	if err != nil {
 		return err
 	}

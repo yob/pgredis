@@ -64,16 +64,14 @@ RSpec.shared_examples "keys" do
     end
 
     context "when multiple keys exists" do
-      # redis 3.0+ supports multiple key arguments, but the ruby library we're using doesn't
-      pending "returns 2" do
-        expect( redis.exists("foo", "bar") ).to eql(2)
+      it "returns 2" do
+        expect( redis.exists(["foo", "bar"]) ).to eql(2)
       end
     end
 
-    context "when the keys exists it it's requestde multiple times" do
-      # redis 3.0+ supports multiple key arguments, but the ruby library we're using doesn't
-      pending "returns 2" do
-        expect( redis.exists("foo", "foo") ).to eql(2)
+    context "when the keys exists and it's requested multiple times" do
+      it "returns 2" do
+        expect( redis.exists(["foo", "foo"]) ).to eql(2)
       end
     end
 

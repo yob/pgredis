@@ -50,3 +50,17 @@ func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis, wri
 		return writer.WriteInt(updated)
 	}
 }
+
+type zcardCommand struct{}
+
+func (cmd *zcardCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+
+	count, err := redis.sortedsets.Cardinality(key)
+	if err != nil {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	} else {
+		return writer.WriteInt(count)
+	}
+}

@@ -63,3 +63,12 @@ func (repo *SortedSetRepository) Add(key []byte, values map[string]float64) (upd
 
 	return count, nil
 }
+
+func (repo *SortedSetRepository) Cardinality(key []byte) (count int64, err error) {
+	sqlStat := "SELECT count(*) FROM redisdata INNER JOIN rediszsets ON redisdata.key = rediszsets.key WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL)"
+	err = repo.db.QueryRow(sqlStat, key).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}

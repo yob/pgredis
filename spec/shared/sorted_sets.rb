@@ -103,4 +103,25 @@ RSpec.shared_examples "sorted sets" do
       end
     end
   end
+  context "zcard" do
+    context "when the set doesn't exist" do
+      it "returns 0" do
+        expect(
+          redis.zcard("foo")
+        ).to eql(0)
+      end
+    end
+    context "when the set exists" do
+      before do
+          redis.zadd("foo","1", "a")
+          redis.zadd("foo","2", "b")
+          redis.zadd("foo","3", "c")
+      end
+      it "returns the number of items in the set" do
+        expect(
+          redis.zcard("foo")
+        ).to eql(3)
+      end
+    end
+  end
 end

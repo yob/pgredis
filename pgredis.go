@@ -74,6 +74,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 			"SET":         &setCommand{},
 			"SETEX":       &setexCommand{},
 			"SETNX":       &setnxCommand{},
+			"SMEMBERS":    &smembersCommand{},
 			"STRLEN":      &strlenCommand{},
 			"TTL":         &ttlCommand{},
 			"TYPE":        &typeCommand{},

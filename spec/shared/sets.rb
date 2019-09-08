@@ -51,4 +51,24 @@ RSpec.shared_examples "sets" do
       end
     end
   end
+
+  context "smembers" do
+    context "when the set doesn't exist" do
+      it "returns an empty array" do
+        expect(
+          redis.smembers("foo")
+        ).to eql([])
+      end
+    end
+    context "when the set has 3 items" do
+      before do
+        redis.sadd("foo",["a","b","c"])
+      end
+      it "returns the items in an array" do
+        expect(
+          redis.smembers("foo")
+        ).to match_array(["a","b","c"])
+      end
+    end
+  end
 end

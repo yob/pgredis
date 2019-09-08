@@ -63,3 +63,35 @@ func (repo *SetRepository) Add(key []byte, values [][]byte) (updated int64, err 
 
 	return count, nil
 }
+
+func (repo *SetRepository) Members(key []byte) (values []string, err error) {
+	result := make([]string, 0)
+
+	sqlStat := `
+			SELECT redissets.value
+			FROM redisdata INNER JOIN redissets ON redisdata.key = redissets.key
+			WHERE redisdata.key = $1 AND
+				(redisdata.expires_at > now() OR expires_at IS NULL)
+	`
+	rows, err := repo.db.Query(sqlStat, key)
+	if err != nil {
+		return result, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var value string
+		err = rows.Scan(&value)
+		if err != nil {
+			return result, err
+		}
+		result = append(result, value)
+	}
+	err = rows.Err()
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
+
+}

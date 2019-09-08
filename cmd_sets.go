@@ -23,3 +23,17 @@ func (cmd *saddCommand) Execute(command *redisproto.Command, redis *PgRedis, wri
 		return writer.WriteInt(updated)
 	}
 }
+
+type smembersCommand struct{}
+
+func (cmd *smembersCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+
+	values, err := redis.sets.Members(key)
+	if err != nil {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	} else {
+		return writer.WriteBulkStrings(values)
+	}
+}

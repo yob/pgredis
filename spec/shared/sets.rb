@@ -8,7 +8,10 @@ RSpec.shared_examples "sets" do
           redis.sadd("foo","a")
         ).to eql(true)
       end
-      it "adds the item to the set"
+      it "adds the item to the set" do
+        redis.sadd("foo","a")
+        expect(redis.smembers("foo")).to match_array(["a"])
+      end
     end
     context "when the set exists" do
       before do
@@ -20,7 +23,10 @@ RSpec.shared_examples "sets" do
             redis.sadd("foo","b")
           ).to eql(true)
         end
-        it "adds the item to the set"
+        it "adds the item to the set" do
+          redis.sadd("foo","b")
+          expect(redis.smembers("foo")).to match_array(["a","b"])
+        end
       end
 
       context "adding two new items" do
@@ -29,7 +35,10 @@ RSpec.shared_examples "sets" do
             redis.sadd("foo",["b","c"])
           ).to eql(2)
         end
-        it "adds the items to the set"
+        it "adds the items to the set" do
+          redis.sadd("foo",["b","c"])
+          expect(redis.smembers("foo")).to match_array(["a","b","c"])
+        end
       end
 
       context "adding one new and one existing item to the set" do
@@ -38,7 +47,10 @@ RSpec.shared_examples "sets" do
             redis.sadd("foo",["a","b"])
           ).to eql(1)
         end
-        it "adds the new item to the set"
+        it "adds the new item to the set" do
+          redis.sadd("foo",["a","b"])
+          expect(redis.smembers("foo")).to match_array(["a","b"])
+        end
       end
 
       context "adding an existing item to the set" do
@@ -47,7 +59,10 @@ RSpec.shared_examples "sets" do
             redis.sadd("foo","a")
           ).to eql(false)
         end
-        it "doesn't modify the set"
+        it "doesn't modify the set" do
+          redis.sadd("foo","a")
+          expect(redis.smembers("foo")).to match_array(["a"])
+        end
       end
     end
   end

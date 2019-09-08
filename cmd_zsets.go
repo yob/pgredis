@@ -38,11 +38,10 @@ func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis, wri
 
 	log.Printf("xxArgProvided: %v", xxArgProvided)
 	log.Printf("nxArgProvided: %v", nxArgProvided)
-	log.Printf("chArgProvided: %v", chArgProvided)
 	log.Printf("incrArgProvided: %v", incrArgProvided)
 	log.Printf("values: %v", values)
 
-	updated, err := redis.sortedsets.Add(key, values)
+	updated, err := redis.sortedsets.Add(key, values, chArgProvided)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
 		return writer.WriteBulk(nil)

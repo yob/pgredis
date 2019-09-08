@@ -102,25 +102,25 @@ RSpec.shared_examples "sorted sets" do
       end
       context "with CH option" do
         context "adding a new item" do
-          it "returns the number of items added or updated" # do
-          #  expect(
-          #    redis.zadd("foo","1.0","b", ch: true)
-          #  ).to eql(true)
-          #end
+          it "returns the number of items added or updated" do
+            expect(
+              redis.zadd("foo","1.0","b", ch: true)
+            ).to eql(true)
+          end
         end
         context "adding an existing item with an identical score" do
-          it "returns the number of items added or updated" # do
-          #  expect(
-          #    redis.zadd("foo","1.1","a", ch: true)
-          #  ).to eql(false)
-          #end
+          it "returns the number of items added or updated" do
+            expect(
+              redis.zadd("foo","1.1","a", ch: true)
+            ).to eql(false)
+          end
         end
         context "adding an existing item with a newscore" do
-          it "returns the number of items added, including items that only had the score updated" # do
-          #  expect(
-          #    redis.zadd("foo","1.2","a", ch: true)
-          #  ).to eql(true)
-          #end
+          it "returns the number of items added, including items that only had the score updated" do
+            expect(
+              redis.zadd("foo","1.2","a", ch: true)
+            ).to eql(true)
+          end
         end
       end
       context "with INCR option" do

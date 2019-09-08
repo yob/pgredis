@@ -150,7 +150,7 @@ RSpec.shared_examples "lists" do
       end
 
       context "last 2 items on the list using negative start and end" do
-        it "returns an empty array" do
+        it "returns an array" do
           expect(
             redis.lrange("foo", -2, -1)
           ).to eql(["b", "c"])

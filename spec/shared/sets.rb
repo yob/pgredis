@@ -24,20 +24,18 @@ RSpec.shared_examples "sets" do
       end
 
       context "adding two new items" do
-        # SADD supports multiple items, but the ruby client we're using doesn't
-        pending "returns the number of items added" do
+        it "returns the number of items added" do
           expect(
-            redis.sadd("foo","b","c")
+            redis.sadd("foo",["b","c"])
           ).to eql(2)
         end
         it "adds the items to the set"
       end
 
       context "adding one new and one existing item to the set" do
-        # SADD supports multiple items, but the ruby client we're using doesn't
-        pending "returns the number of items added" do
+        it "returns the number of items added" do
           expect(
-            redis.sadd("foo","a","b")
+            redis.sadd("foo",["a","b"])
           ).to eql(1)
         end
         it "adds the new item to the set"

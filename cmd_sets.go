@@ -10,9 +10,12 @@ type saddCommand struct{}
 
 func (cmd *saddCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
 	key := command.Get(1)
-	value := command.Get(2)
+	values := make([][]byte, 0)
+	for i := 2; i < command.ArgCount(); i++ {
+		values = append(values, command.Get(i))
+	}
 
-	updated, err := redis.sets.Add(key, value)
+	updated, err := redis.sets.Add(key, values)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
 		return writer.WriteBulk(nil)

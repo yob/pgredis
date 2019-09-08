@@ -14,7 +14,9 @@ func NewSetRepository(db *sql.DB) *SetRepository {
 	}
 }
 
-func (repo *SetRepository) Add(key []byte, value []byte) (updated int64, err error) {
+func (repo *SetRepository) Add(key []byte, values [][]byte) (updated int64, err error) {
+	count := int64(0)
+
 	tx, err := repo.db.Begin()
 	if err != nil {
 		return 0, err
@@ -44,12 +46,15 @@ func (repo *SetRepository) Add(key []byte, value []byte) (updated int64, err err
 		return 0, err
 	}
 
-	sqlStat = "INSERT INTO redissets(key, value) VALUES ($1, $2) ON CONFLICT (key, value) DO NOTHING"
-	res, err := tx.Exec(sqlStat, key, value)
-	if err != nil {
-		return 0, err
+	for _, value := range values {
+		sqlStat = "INSERT INTO redissets(key, value) VALUES ($1, $2) ON CONFLICT (key, value) DO NOTHING"
+		res, err := tx.Exec(sqlStat, key, value)
+		if err != nil {
+			return 0, err
+		}
+		rowCount, _ := res.RowsAffected()
+		count += rowCount
 	}
-	count, _ := res.RowsAffected()
 
 	err = tx.Commit()
 	if err != nil {

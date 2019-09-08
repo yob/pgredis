@@ -53,7 +53,19 @@ func (repo *SortedSetRepository) Add(key []byte, values map[string]float64) (upd
 			return 0, err
 		}
 		rowCount, _ := res.RowsAffected()
-		count += rowCount
+		if rowCount == 0 {
+			// the set must already have this member, update it with a new score if necessary
+			sqlStat = "UPDATE rediszsets SET score = $3 WHERE key = $1 AND value = $2 AND score <> $4"
+			_, err := tx.Exec(sqlStat, key, value, score, score)
+			if err != nil {
+				return 0, err
+			}
+			// if CH option is provided, we should include this in the count
+			//updatedCount, _ := res.RowsAffected()
+			//count += updatedCount
+		} else {
+			count += rowCount
+		}
 	}
 
 	err = tx.Commit()

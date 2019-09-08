@@ -8,7 +8,14 @@ RSpec.shared_examples "sorted sets" do
           redis.zadd("foo","1.1", "a")
         ).to eql(true)
       end
-      it "adds the item to the set"
+      it "adds the item to the set" do
+        redis.zadd("foo","1.1", "a")
+        expect(
+          redis.zrange("foo",0,1, with_scores: true)
+        ).to eql([
+          ["a", 1.1]
+        ])
+      end
     end
     context "when the set exists" do
       before do
@@ -20,7 +27,15 @@ RSpec.shared_examples "sorted sets" do
             redis.zadd("foo","1.0","b")
           ).to eql(true)
         end
-        it "adds the item to the set"
+        it "adds the item to the set" do
+          redis.zadd("foo","1.0", "b")
+          expect(
+            redis.zrange("foo",0,2, with_scores: true)
+          ).to eql([
+            ["b", 1.0],
+            ["a", 1.1]
+          ])
+        end
       end
       context "adding a multiple new items" do
         it "returns the number of items added" do
@@ -28,7 +43,16 @@ RSpec.shared_examples "sorted sets" do
             redis.zadd("foo",[["1.0","b"],["2.0","c"]])
           ).to eql(2)
         end
-        it "adds both items to the set"
+        it "adds the item to the set" do
+          redis.zadd("foo",[["1.0","b"],["2.0","c"]])
+          expect(
+            redis.zrange("foo",0,2, with_scores: true)
+          ).to eql([
+            ["b", 1.0],
+            ["a", 1.1],
+            ["c", 2.0],
+          ])
+        end
       end
       context "adding an existing item with an identical score" do
         it "returns the number of items added" do
@@ -36,7 +60,14 @@ RSpec.shared_examples "sorted sets" do
             redis.zadd("foo","1.1","a")
           ).to eql(false)
         end
-        it "does not modify the set"
+        it "does not modify the set" do
+          redis.zadd("foo","1.1","a")
+          expect(
+            redis.zrange("foo",0,2, with_scores: true)
+          ).to eql([
+            ["a", 1.1]
+          ])
+        end
       end
       context "adding an existing item with a newscore" do
         it "returns the number of items added, exlcuding items that only had the score updated" do
@@ -44,7 +75,14 @@ RSpec.shared_examples "sorted sets" do
             redis.zadd("foo","1.2","a")
           ).to eql(false)
         end
-        it "updates the score of the existing item"
+        it "updates the score of the existing item" do
+          redis.zadd("foo","1.2", "a")
+          expect(
+            redis.zrange("foo",0,2, with_scores: true)
+          ).to eql([
+            ["a", 1.2]
+          ])
+        end
       end
       context "with XX option" do
         context "adding an item that is already in the set" do

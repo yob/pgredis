@@ -42,13 +42,68 @@ like this:
 
     $ ./auto/run
 
-Then query it with the standard redis-cli:
+Then query it with the standard redis-cli. Not all commands are implemented, but many basic ones are.
+
+### Strings
 
     $ redis-cli -h 127.0.0.1 set foo bar
     "OK"
 
     $ redis-cli -h 127.0.0.1 get foo
     "bar"
+
+### Incrementing
+
+    $ redis-cli -h 127.0.0.1 incr foo
+    (integer) 1
+
+    $ redis-cli -h 127.0.0.1 decr foo
+    (integer) 0
+
+### Lists
+
+    $ redis-cli -h 127.0.0.1 lpush  bar a
+    (integer) 1
+
+    $ redis-cli -h 127.0.0.1 lpush  bar b
+    (integer) 2
+
+    $ redis-cli -h 127.0.0.1 lrange bar 0 1
+    1) "b"
+    2) "a"
+
+### Sets
+
+    $ redis-cli -h 127.0.0.1 sadd baz a
+    (integer) 1
+
+    $ redis-cli -h 127.0.0.1 sadd baz b
+    (integer) 1
+
+    $ redis-cli -h 127.0.0.1 sadd baz b
+    (integer) 0
+
+    $ redis-cli -h 127.0.0.1 smembers baz
+    1) "a"
+    2) "b"
+
+### Sorted Sets
+
+    $ redis-cli -h 127.0.0.1 zadd boo 2 b
+    (integer) 1
+
+    $ redis-cli -h 127.0.0.1 zadd boo 1 a
+    (integer) 1
+
+    $ redis-cli -h 127.0.0.1 zrange boo 0 1
+    1) "a"
+    2) "b"
+
+    $ redis-cli -h 127.0.0.1 zrange boo 0 1 WITHSCORES
+    1) "a"
+    2) "1"
+    3) "b"
+    4) "2"
 
 ## Tests
 

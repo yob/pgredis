@@ -8,6 +8,7 @@ RSpec.describe "realredis" do
   include_examples "strings"
   include_examples "lists"
   include_examples "sets"
+  include_examples "sorted sets"
 end
 
 RSpec.describe "pgredis" do
@@ -18,4 +19,5 @@ RSpec.describe "pgredis" do
   include_examples "strings"
   include_examples "lists"
   include_examples "sets"
+  include_examples "sorted sets"
 end

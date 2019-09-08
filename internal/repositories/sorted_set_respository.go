@@ -101,6 +101,8 @@ func (repo *SortedSetRepository) Range(key []byte, start int, end int, withScore
 		return result, err
 	}
 
+	// TODO this start/end logic is *VERY* similair to logic in ListRepository.Lrange, Maybe it could
+	// be extracted into a shared internal package?
 	// start normalise start/end values
 	if start < 0 {
 		start = setLength + start

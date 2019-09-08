@@ -83,6 +83,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 			"FLUSHALL":    &flushallCommand{},
 			"ZADD":        &zaddCommand{},
 			"ZCARD":       &zcardCommand{},
+			"ZRANGE":      &zrangeCommand{},
 		},
 	}
 }

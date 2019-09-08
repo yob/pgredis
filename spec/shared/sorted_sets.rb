@@ -124,4 +124,109 @@ RSpec.shared_examples "sorted sets" do
       end
     end
   end
+
+  context "zrange" do
+    context "when the zset doesn't exist" do
+      context "reading the first item" do
+        it "returns an empty array" do
+          expect(
+            redis.zrange("foo", 0, 0)
+          ).to eql([])
+        end
+      end
+    end
+
+    context "when the list has 3 items" do
+      before do
+        redis.zadd("foo", 2, "b")
+        redis.zadd("foo", 1, "a")
+        redis.zadd("foo", 3, "c")
+      end
+      context "reading the first item" do
+        it "returns an array with 1 item" do
+          expect(
+            redis.zrange("foo", 0, 0)
+          ).to eql(["a"])
+        end
+      end
+
+      context "reading the full set" do
+        it "returns an array" do
+          expect(
+            redis.zrange("foo", 0, 2)
+          ).to eql(["a","b","c"])
+        end
+      end
+
+      context "reading the full set using a negative index" do
+        it "returns an array" do
+          expect(
+            redis.zrange("foo", 0, -1)
+          ).to eql(["a","b","c"])
+        end
+      end
+
+      context "skipping the first item" do
+        it "returns an array" do
+          expect(
+            redis.zrange("foo", 1, 2)
+          ).to eql(["b","c"])
+        end
+      end
+
+      context "reading the first two items" do
+        it "returns an array" do
+          expect(
+            redis.zrange("foo", 0, 1)
+          ).to eql(["a","b"])
+        end
+      end
+
+      context "reading past the end of the set" do
+        it "returns an array" do
+          expect(
+            redis.zrange("foo", 0, 10)
+          ).to eql(["a","b","c"])
+        end
+      end
+
+      context "starting past the end of the set" do
+        it "returns an empty array" do
+          expect(
+            redis.zrange("foo", 10, 20)
+          ).to eql([])
+        end
+      end
+
+      context "negative start and end" do
+        it "returns an empty array" do
+          expect(
+            redis.zrange("foo", -3, -1)
+          ).to eql(["a", "b", "c"])
+        end
+      end
+
+      context "last 2 items of the set using negative start and end" do
+        it "returns an array" do
+          expect(
+            redis.zrange("foo", -2, -1)
+          ).to eql(["b", "c"])
+        end
+      end
+
+      context "when WITHSCORES option is used" do
+        context "reading the full set" do
+          it "returns an array that includes the scores" do
+            expect(
+              redis.zrange("foo", 0, 2, with_scores: true)
+            ).to eql([
+              ["a",1.0],
+              ["b",2.0],
+              ["c",3.0]
+            ])
+          end
+        end
+      end
+    end
+  end
 end

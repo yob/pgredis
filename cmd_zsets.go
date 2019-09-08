@@ -64,3 +64,20 @@ func (cmd *zcardCommand) Execute(command *redisproto.Command, redis *PgRedis, wr
 		return writer.WriteInt(count)
 	}
 }
+
+type zrangeCommand struct{}
+
+func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	start, _ := strconv.Atoi(string(command.Get(2)))
+	end, _ := strconv.Atoi(string(command.Get(3)))
+	includeScores := string(command.Get(4)) == "WITHSCORES"
+
+	items, err := redis.sortedsets.Range(key, start, end, includeScores)
+	if err == nil {
+		return writer.WriteBulkStrings(items)
+	} else {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	}
+}

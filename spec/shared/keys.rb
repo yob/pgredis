@@ -219,11 +219,25 @@ RSpec.shared_examples "keys" do
     end
 
     context "when a set key exists" do
-      it "returns set"
+      before do
+        redis.sadd("foo", "bar")
+      end
+      it "returns set" do
+        expect(
+          redis.type("foo")
+        ).to eql("set")
+      end
     end
 
     context "when a sorted set key exists" do
-      it "returns zset"
+      before do
+        redis.zadd("foo", "1", "bar")
+      end
+      it "returns zset" do
+        expect(
+          redis.type("foo")
+        ).to eql("zset")
+      end
     end
 
     context "when a hash key exists" do

@@ -86,6 +86,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 			"ZADD":        &zaddCommand{},
 			"ZCARD":       &zcardCommand{},
 			"ZRANGE":      &zrangeCommand{},
+			"ZREM":        &zremCommand{},
 		},
 	}
 }

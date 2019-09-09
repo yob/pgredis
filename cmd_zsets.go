@@ -80,3 +80,22 @@ func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, w
 		return writer.WriteBulk(nil)
 	}
 }
+
+type zremCommand struct{}
+
+func (cmd *zremCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	values := make([][]byte, 0)
+	for i := 2; i < command.ArgCount(); i++ {
+		values = append(values, command.Get(i))
+	}
+
+	updated, err := redis.sortedsets.Remove(key, values)
+
+	if err != nil {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteError(err.Error())
+	} else {
+		return writer.WriteInt(updated)
+	}
+}

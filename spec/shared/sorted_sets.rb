@@ -267,4 +267,33 @@ RSpec.shared_examples "sorted sets" do
       end
     end
   end
+  context "zrem" do
+    context "when the set doesn't exist" do
+      it "returns 0" do
+        expect(
+          redis.zrem("foo", "a")
+        ).to eql(false)
+      end
+    end
+    context "when the set has 3 items" do
+      before do
+        redis.zadd("foo","2","b")
+        redis.zadd("foo","1","a")
+        redis.zadd("foo","3","c")
+      end
+      context "removing two of them" do
+        it "returns 2 and removes the items from the set" do
+          expect(
+            redis.zrem("foo", ["a","b"])
+          ).to eql(2)
+
+          expect(
+            redis.zrange("foo",0,1, with_scores: true)
+          ).to eql([
+            ["c", 3.0]
+          ])
+        end
+      end
+    end
+  end
 end

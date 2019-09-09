@@ -67,6 +67,28 @@ RSpec.shared_examples "sets" do
     end
   end
 
+  context "scard" do
+    context "when the set doesn't exist" do
+      it "returns 0" do
+        expect(
+          redis.scard("foo")
+        ).to eql(0)
+      end
+    end
+    context "when the set exists" do
+      before do
+          redis.sadd("foo","a")
+          redis.sadd("foo","b")
+          redis.sadd("foo","c")
+      end
+      it "returns the number of items in the set" do
+        expect(
+          redis.scard("foo")
+        ).to eql(3)
+      end
+    end
+  end
+
   context "smembers" do
     context "when the set doesn't exist" do
       it "returns an empty array" do

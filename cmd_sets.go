@@ -24,6 +24,20 @@ func (cmd *saddCommand) Execute(command *redisproto.Command, redis *PgRedis, wri
 	}
 }
 
+type scardCommand struct{}
+
+func (cmd *scardCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+
+	count, err := redis.sets.Cardinality(key)
+	if err != nil {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	} else {
+		return writer.WriteInt(count)
+	}
+}
+
 type smembersCommand struct{}
 
 func (cmd *smembersCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {

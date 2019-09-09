@@ -64,6 +64,15 @@ func (repo *SetRepository) Add(key []byte, values [][]byte) (updated int64, err 
 	return count, nil
 }
 
+func (repo *SetRepository) Cardinality(key []byte) (count int64, err error) {
+	sqlStat := "SELECT count(*) FROM redisdata INNER JOIN redissets ON redisdata.key = redissets.key WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL)"
+	err = repo.db.QueryRow(sqlStat, key).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func (repo *SetRepository) Members(key []byte) (values []string, err error) {
 	result := make([]string, 0)
 

@@ -38,6 +38,24 @@ func (cmd *scardCommand) Execute(command *redisproto.Command, redis *PgRedis, wr
 	}
 }
 
+type sremCommand struct{}
+
+func (cmd *sremCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	values := make([][]byte, 0)
+	for i := 2; i < command.ArgCount(); i++ {
+		values = append(values, command.Get(i))
+	}
+
+	updated, err := redis.sets.Remove(key, values)
+	if err != nil {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	} else {
+		return writer.WriteInt(updated)
+	}
+}
+
 type smembersCommand struct{}
 
 func (cmd *smembersCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {

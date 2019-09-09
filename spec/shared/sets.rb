@@ -108,4 +108,30 @@ RSpec.shared_examples "sets" do
       end
     end
   end
+
+  context "srem" do
+    context "when the set doesn't exist" do
+      it "returns 0" do
+        expect(
+          redis.srem("foo", "a")
+        ).to eql(false)
+      end
+    end
+    context "when the set has 3 items" do
+      before do
+        redis.sadd("foo",["a","b","c"])
+      end
+      context "removing two of them" do
+        it "returns 2 and removes the items from the set" do
+          expect(
+            redis.srem("foo", ["a","b"])
+          ).to eql(2)
+
+          expect(
+            redis.smembers("foo")
+          ).to match_array(["c"])
+        end
+      end
+    end
+  end
 end

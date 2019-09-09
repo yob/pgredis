@@ -1,4 +1,4 @@
-module pgredis
+module github.com/yob/pgredis
 
 go 1.12
 

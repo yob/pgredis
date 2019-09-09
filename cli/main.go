@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/urfave/cli"
-	"pgredis"
+	"github.com/yob/pgredis"
 )
 
 func logf(msg string, args ...interface{}) {

@@ -241,7 +241,14 @@ RSpec.shared_examples "keys" do
     end
 
     context "when a hash key exists" do
-      it "returns hash"
+      before do
+        redis.hset("foo", "bar", "1")
+      end
+      it "returns hash" do
+        expect(
+          redis.type("foo")
+        ).to eql("hash")
+      end
     end
 
     context "when a stream key exists" do

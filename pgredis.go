@@ -17,6 +17,7 @@ import (
 
 type PgRedis struct {
 	commands   map[string]redisCommand
+	hashes     *repositories.HashRepository
 	keys       *repositories.KeyRepository
 	strings    *repositories.StringRepository
 	lists      *repositories.ListRepository
@@ -42,6 +43,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 	}
 
 	return &PgRedis{
+		hashes:     repositories.NewHashRepository(db),
 		keys:       repositories.NewKeyRepository(db),
 		strings:    repositories.NewStringRepository(db),
 		lists:      repositories.NewListRepository(db),
@@ -60,6 +62,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 			"GETBIT":      &getbitCommand{},
 			"GETRANGE":    &getrangeCommand{},
 			"GETSET":      &getsetCommand{},
+			"HSET":        &hsetCommand{},
 			"INCR":        &incrCommand{},
 			"INCRBY":      &incrbyCommand{},
 			"INCRBYFLOAT": &incrbyfloatCommand{},
@@ -145,6 +148,11 @@ func setupSchema(db *sql.DB) error {
 	}
 
 	_, err = db.Query("create table if not exists rediszsets (key bytea, value bytea not null, score decimal not null, PRIMARY KEY(key, value), FOREIGN KEY (key) REFERENCES redisdata (key) ON DELETE CASCADE);")
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Query("create table if not exists redishashes (key bytea, field bytea not null, value bytea not null, PRIMARY KEY(key, field), FOREIGN KEY (key) REFERENCES redisdata (key) ON DELETE CASCADE);")
 	if err != nil {
 		return err
 	}

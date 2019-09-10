@@ -8,3 +8,4 @@ $(dirname $0)/psql psql -c "select encode(key, 'escape') as key, encode(type, 'e
 $(dirname $0)/psql psql -c "select encode(key, 'escape') as key, idx, encode(value, 'escape') as value from redislists order by key, idx"
 $(dirname $0)/psql psql -c "select encode(key, 'escape') as key, encode(value, 'escape') as value from redissets order by key, value"
 $(dirname $0)/psql psql -c "select encode(key, 'escape') as key, encode(value, 'escape') as value, score from rediszsets order by key, score, value"
+$(dirname $0)/psql psql -c "select encode(key, 'escape') as key, encode(field, 'escape') as field, encode(value, 'escape') as value from redishashes order by key, field, value"

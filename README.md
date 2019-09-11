@@ -105,6 +105,23 @@ Then query it with the standard redis-cli. Not all commands are implemented, but
     3) "b"
     4) "2"
 
+### Hashes
+
+    $ redis-cli -h 127.0.0.1 hset foo aaa 1
+    (integer) 1
+
+    $ redis-cli -h 127.0.0.1 hset foo bbb 2
+    (integer) 1
+
+    $ redis-cli -h 127.0.0.1 hget foo aaa
+    "1"
+
+    $ redis-cli -h 127.0.0.1 hgetall foo
+    1) "aaa"
+    2) "1"
+    3) "bbb"
+    4) "2"
+
 ## Tests
 
 There is a test suite written in ruby. Run it like this:

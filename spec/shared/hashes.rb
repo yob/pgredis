@@ -43,6 +43,49 @@ RSpec.shared_examples "hashes" do
     end
   end
 
+  context "hmget" do
+    context "when the hash doesn't exist" do
+      it "returns an array with nil" do
+        expect(
+          redis.hmget("foo","bar")
+        ).to eql([nil])
+      end
+    end
+    context "when the hash exists with two fields field" do
+      before do
+        redis.hset("foo", "bar","1")
+        redis.hset("foo", "baz","2")
+      end
+      context "requesting both fields" do
+        it "returns an array with the values" do
+          expect(
+            redis.hmget("foo", "bar", "baz")
+          ).to eql(["1","2"])
+        end
+      end
+
+      context "requesting a field that doesn't exist" do
+        it "returns an array with the values or nil" do
+          expect(
+            redis.hmget("foo", "aaa", "bar")
+          ).to eql([nil,"1"])
+        end
+      end
+    end
+    context "when the hash exists with a single field but it's expired" do
+      before do
+        redis.hset("foo", "bar", "10")
+        redis.expire("foo", 1) # TODO change this to pexpire
+        sleep(1.1)
+      end
+      it "returns an array with nil" do
+        expect(
+          redis.hmget("foo", "bar")
+        ).to eql([nil])
+      end
+    end
+  end
+
   context "hset" do
     context "when the hash doesn't exist" do
       it "returns 0" do

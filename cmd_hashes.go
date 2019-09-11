@@ -22,6 +22,21 @@ func (cmd *hgetCommand) Execute(command *redisproto.Command, redis *PgRedis, wri
 	}
 }
 
+type hmgetCommand struct{}
+
+func (cmd *hmgetCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	values := make([]interface{}, command.ArgCount()-2)
+	for i := 2; i < command.ArgCount(); i++ {
+		// TODO calling Get in a loop like this returns the correct result, but is super inefficient
+		success, value, _ := redis.hashes.Get(key, command.Get(i))
+		if success {
+			values[i-2] = string(value)
+		}
+	}
+	return writer.WriteObjectsSlice(values)
+}
+
 type hsetCommand struct{}
 
 func (cmd *hsetCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {

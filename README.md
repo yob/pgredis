@@ -7,7 +7,7 @@ it.
 A server that talks the redis protocol to clients, and stores all data in a
 postgres database.
 
-This is (presumably) doing to be much slower than keeping the data in memory
+This is (presumably) going to be much slower than keeping the data in memory
 like real-redis, but sometimes keeping the data safe and replicated is more
 useful than raw performance. You probably shouldn't use this for caching.
 

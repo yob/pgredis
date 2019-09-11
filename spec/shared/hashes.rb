@@ -128,7 +128,12 @@ RSpec.shared_examples "hashes" do
           redis.hset("foo","bar","1")
         ).to eql(true)
       end
-      it "creates the hash on demand"
+      it "creates the hash on demand" do
+        redis.hset("foo","bar","1")
+        expect(
+          redis.hgetall("foo")
+        ).to eql({"bar" => "1"})
+      end
     end
     context "when the hash exists with a single field" do
       before do
@@ -140,7 +145,12 @@ RSpec.shared_examples "hashes" do
             redis.hset("foo", "baz", "2")
           ).to eql(true)
         end
-        it "adds the field to the hash"
+        it "adds the field to the hash" do
+          redis.hset("foo", "baz", "2")
+          expect(
+            redis.hgetall("foo")
+          ).to eql({"bar" => "1", "baz" => "2"})
+        end
       end
 
       context "updating an existing field" do
@@ -149,7 +159,12 @@ RSpec.shared_examples "hashes" do
             redis.hset("foo", "bar", "2")
           ).to eql(false)
         end
-        it "updates the field"
+        it "updates the field" do
+          redis.hset("foo", "bar", "2")
+          expect(
+            redis.hgetall("foo")
+          ).to eql({"bar" => "2"})
+        end
       end
     end
 

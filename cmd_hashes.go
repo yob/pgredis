@@ -37,6 +37,19 @@ func (cmd *hmgetCommand) Execute(command *redisproto.Command, redis *PgRedis, wr
 	return writer.WriteObjectsSlice(values)
 }
 
+type hgetallCommand struct{}
+
+func (cmd *hgetallCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	fields_and_values, err := redis.hashes.GetAll(key)
+	if err != nil {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteError(err.Error())
+	} else {
+		return writer.WriteBulkStrings(fields_and_values)
+	}
+}
+
 type hsetCommand struct{}
 
 func (cmd *hsetCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {

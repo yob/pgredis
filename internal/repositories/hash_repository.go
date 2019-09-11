@@ -36,6 +36,37 @@ func (repo *HashRepository) Get(key []byte, field []byte) (success bool, value [
 	}
 }
 
+func (repo *HashRepository) GetAll(key []byte) (fields_and_values []string, err error) {
+	fields_and_values = []string{}
+	sqlStat := `
+			SELECT redishashes.field, redishashes.value
+			FROM redisdata INNER JOIN redishashes ON redisdata.key = redishashes.key
+			WHERE redisdata.key = $1 AND
+				(redisdata.expires_at > now() OR expires_at IS NULL)
+	`
+
+	rows, err := repo.db.Query(sqlStat, key)
+	if err != nil {
+		return fields_and_values, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var field string
+		var value string
+		err = rows.Scan(&field, &value)
+		if err != nil {
+			return fields_and_values, err
+		}
+		fields_and_values = append(fields_and_values, field, value)
+	}
+	err = rows.Err()
+	if err != nil {
+		return fields_and_values, err
+	}
+	return fields_and_values, nil
+}
+
 func (repo *HashRepository) Set(key []byte, field []byte, value []byte) (inserted int64, err error) {
 	tx, err := repo.db.Begin()
 	if err != nil {

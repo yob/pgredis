@@ -168,5 +168,52 @@ RSpec.shared_examples "hashes" do
       end
     end
 
+    context "hmset" do
+      context "when the hash doesn't exist" do
+        it "returns 'OK'" do
+          expect(
+            redis.hmset("foo","bar","1")
+          ).to eql("OK")
+        end
+        it "creates the hash on demand" do
+          redis.hmset("foo","bar","1")
+          expect(
+            redis.hgetall("foo")
+          ).to eql({"bar" => "1"})
+        end
+      end
+      context "when the hash exists with a single field" do
+        before do
+          redis.hset("foo", "bar","1")
+        end
+        context "adding two new fields" do
+          it "returns OK" do
+            expect(
+              redis.hmset("foo", "aaa", "2", "bbb", "3")
+            ).to eql("OK")
+          end
+          it "adds the field to the hash" do
+            redis.hmset("foo", "aaa", "2", "bbb", "3")
+            expect(
+              redis.hgetall("foo")
+            ).to eql({"bar" => "1", "aaa" => "2", "bbb" => "3"})
+          end
+        end
+
+        context "updating an existing field" do
+          it "returns OK" do
+            expect(
+              redis.hmset("foo", "bar", "2")
+            ).to eql("OK")
+          end
+          it "updates the field" do
+            redis.hmset("foo", "bar", "2")
+            expect(
+              redis.hgetall("foo")
+            ).to eql({"bar" => "2"})
+          end
+        end
+      end
+    end
   end
 end

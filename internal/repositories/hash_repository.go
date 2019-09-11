@@ -122,3 +122,50 @@ func (repo *HashRepository) Set(key []byte, field []byte, value []byte) (inserte
 
 	return inserted, nil
 }
+
+func (repo *HashRepository) SetMultiple(key string, fields_and_values map[string]string) (err error) {
+	tx, err := repo.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// delete any expired rows in the db with this key
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	_, err = tx.Exec(sqlStat, key)
+	if err != nil {
+		return err
+	}
+
+	// ensure the db has a current key
+	sqlStat = "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'hash', '', NULL) ON CONFLICT (key) DO NOTHING"
+	_, err = tx.Exec(sqlStat, key)
+
+	if err != nil {
+		return err
+	}
+
+	// now lock that key so no one else can change it
+	sqlStat = "SELECT key FROM redisdata WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL) FOR UPDATE"
+	_, err = tx.Exec(sqlStat, key)
+
+	if err != nil {
+		return err
+	}
+
+	for field, value := range fields_and_values {
+		// TODO could we do this in a single SQL statement?
+		sqlStat = "INSERT INTO redishashes (key, field, value) values ($1, $2, $3) ON CONFLICT (key, field) DO UPDATE SET value=$3"
+		_, err := tx.Exec(sqlStat, key, field, value)
+		if err != nil {
+			return err
+		}
+	}
+
+	// save our work, release all locks
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

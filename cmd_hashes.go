@@ -50,6 +50,25 @@ func (cmd *hgetallCommand) Execute(command *redisproto.Command, redis *PgRedis, 
 	}
 }
 
+type hmsetCommand struct{}
+
+func (cmd *hmsetCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := string(command.Get(1))
+	items := make(map[string]string)
+
+	for i := 2; i < command.ArgCount(); i += 2 {
+		items[string(command.Get(i))] = string(command.Get(i + 1))
+	}
+	log.Printf("items: %v\n", items)
+	err := redis.hashes.SetMultiple(key, items)
+	if err == nil {
+		return writer.WriteBulkString("OK")
+	} else {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	}
+}
+
 type hsetCommand struct{}
 
 func (cmd *hsetCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {

@@ -6,6 +6,22 @@ import (
 	"github.com/secmask/go-redisproto"
 )
 
+type hgetCommand struct{}
+
+func (cmd *hgetCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+	key := command.Get(1)
+	field := command.Get(2)
+	success, value, err := redis.hashes.Get(key, field)
+	if success {
+		return writer.WriteBulkString(string(value))
+	} else if !success && err == nil {
+		return writer.WriteBulk(nil)
+	} else {
+		log.Println("ERROR: ", err.Error())
+		return writer.WriteBulk(nil)
+	}
+}
+
 type hsetCommand struct{}
 
 func (cmd *hsetCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {

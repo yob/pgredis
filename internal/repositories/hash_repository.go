@@ -14,6 +14,28 @@ func NewHashRepository(db *sql.DB) *HashRepository {
 	}
 }
 
+func (repo *HashRepository) Get(key []byte, field []byte) (success bool, value []byte, err error) {
+
+	sqlStat := `
+			SELECT redishashes.value
+			FROM redisdata INNER JOIN redishashes ON redisdata.key = redishashes.key
+			WHERE redisdata.key = $1 AND
+				redishashes.field = $2 AND
+				(redisdata.expires_at > now() OR expires_at IS NULL)
+	`
+
+	row := repo.db.QueryRow(sqlStat, key, field)
+
+	switch err := row.Scan(&value); err {
+	case sql.ErrNoRows:
+		return false, value, nil
+	case nil:
+		return true, value, nil
+	default:
+		return false, value, err
+	}
+}
+
 func (repo *HashRepository) Set(key []byte, field []byte, value []byte) (inserted int64, err error) {
 	tx, err := repo.db.Begin()
 	if err != nil {

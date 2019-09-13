@@ -10,6 +10,7 @@ RSpec.describe "realredis" do
   include_examples "sets"
   include_examples "sorted sets"
   include_examples "hashes"
+  include_examples "pipelining"
 end
 
 RSpec.describe "pgredis" do
@@ -22,4 +23,5 @@ RSpec.describe "pgredis" do
   include_examples "sets"
   include_examples "sorted sets"
   include_examples "hashes"
+  include_examples "pipelining"
 end

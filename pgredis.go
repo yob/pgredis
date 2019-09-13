@@ -180,6 +180,10 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 	buffer := bufio.NewWriter(conn)
 	writer := redisproto.NewWriter(buffer)
 	var ew error
+	var tx *sql.Tx
+	var txerr error
+	var multiResponses = []pgRedisValue{}
+	mode := "single"
 	for {
 		command, err := parser.ReadCommand()
 		if err != nil {
@@ -192,29 +196,86 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 			}
 		}
 		cmdString := strings.ToUpper(string(command.Get(0)))
-		cmd := redis.selectCmd(cmdString)
+		if cmdString == "MULTI" {
+			log.Printf("command=MULTI\n")
+			mode = "multi"
+			multiResponses = make([]pgRedisValue, 0)
 
-		// start a db transaction
-		tx, txerr := redis.db.Begin()
-		if txerr != nil {
-			ew = writer.WriteError(txerr.Error())
+			// start a db transaction
+			tx, txerr = redis.db.Begin()
+			if txerr != nil {
+				ew = writer.WriteError(txerr.Error())
+			}
+			log.Printf("opened MULTi transaction, sending OK\n")
+			writer.WriteSimpleString("OK")
+			writer.Flush()
+		}
+		if mode == "single" {
+			cmd := redis.selectCmd(cmdString)
+
+			// start a db transaction
+			tx, txerr := redis.db.Begin()
+			if txerr != nil {
+				ew = writer.WriteError(txerr.Error())
+			}
+
+			result := cmd.Execute(command, redis, tx)
+			ew = result.writeTo(buffer)
+			if ew != nil {
+				// this should be rare, there's no much that can go wrong when writing to an in memory buffer
+				log.Println("Error during command execution, connection closed", ew)
+				break
+			}
+
+			buffer.Flush()
+
+			txerr = tx.Commit()
+			if txerr != nil {
+				ew = writer.WriteError(txerr.Error())
+			}
+		} else {
+			log.Printf("MULTI command execution: %s\n", cmdString)
+			if cmdString != "MULTI" && cmdString != "EXEC" && cmdString != "DISCARD" {
+				cmd := redis.selectCmd(cmdString)
+				result := cmd.Execute(command, redis, tx)
+				multiResponses = append(multiResponses, result)
+				writer.WriteSimpleString("QUEUED")
+				writer.Flush()
+			}
 		}
 
-		result := cmd.Execute(command, redis, tx)
-		ew = result.writeTo(buffer)
-		if ew != nil {
-			// this should be rare, there's no much that can go wrong when writing to an in memory buffer
-			log.Println("Error during command execution, connection closed", ew)
-			break
+		if cmdString == "DISCARD" {
+			if mode == "multi" {
+				txerr = tx.Rollback()
+				if txerr != nil {
+					ew = writer.WriteError(txerr.Error())
+				}
+				writer.WriteSimpleString("OK")
+				writer.Flush()
+				multiResponses = make([]pgRedisValue, 0)
+				mode = "single"
+			} else {
+				ew = writer.WriteError("DISCARD without MULTI")
+			}
+		} else if cmdString == "EXEC" {
+			if mode == "multi" {
+				log.Printf("about to process EXEC\n")
+				txerr = tx.Commit()
+				if txerr != nil {
+					ew = writer.WriteError(txerr.Error())
+				}
+				redisArray := newPgRedisArray(multiResponses)
+				foo := redisArray.writeTo(buffer)
+				if foo != nil {
+					log.Printf("serialisation error\n", foo)
+				}
+				buffer.Flush()
+				multiResponses = make([]pgRedisValue, 0)
+				mode = "single"
+			} else {
+				ew = writer.WriteError("EXEC without MULTI")
+			}
 		}
-
-		buffer.Flush()
-
-		txerr = tx.Commit()
-		if txerr != nil {
-			ew = writer.WriteError(txerr.Error())
-		}
-
 		if cmdString == "QUIT" {
 			break
 		}

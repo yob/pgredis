@@ -25,6 +25,30 @@ type PgRedis struct {
 	sortedsets *repositories.SortedSetRepository
 }
 
+// mirror the redisproto.Command interface
+type redisProtoCommand interface {
+    ArgCount() int
+    Get(index int) []byte
+    IsLast() bool
+}
+
+type localRedisCommand struct {
+	args [][]byte
+	last bool
+}
+
+func (cmd localRedisCommand) ArgCount() int {
+	return len(cmd.args)
+}
+
+func (cmd localRedisCommand) Get(index int) []byte {
+	return cmd.args[index]
+}
+
+func (cmd localRedisCommand) IsLast() bool {
+	return cmd.last
+}
+
 func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 	fmt.Println("Connecting to: ", connStr)
 	db, err := openDatabaseWithRetries(connStr, 3)
@@ -50,50 +74,50 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 		sets:       repositories.NewSetRepository(db),
 		sortedsets: repositories.NewSortedSetRepository(db),
 		commands: map[string]redisCommand{
-			"APPEND":      &appendCommand{},
-			"BITCOUNT":    &bitcountCommand{},
-			"DECR":        &decrCommand{},
-			"DEL":         &delCommand{},
-			"DECRBY":      &decrbyCommand{},
-			"ECHO":        &echoCommand{},
-			"EXISTS":      &existsCommand{},
-			"EXPIRE":      &expireCommand{},
+			//"APPEND":      &appendCommand{},
+			//"BITCOUNT":    &bitcountCommand{},
+			//"DECR":        &decrCommand{},
+			//"DEL":         &delCommand{},
+			//"DECRBY":      &decrbyCommand{},
+			//"ECHO":        &echoCommand{},
+			//"EXISTS":      &existsCommand{},
+			//"EXPIRE":      &expireCommand{},
 			"GET":         &getCommand{},
-			"GETBIT":      &getbitCommand{},
-			"GETRANGE":    &getrangeCommand{},
-			"GETSET":      &getsetCommand{},
-			"HGET":        &hgetCommand{},
-			"HGETALL":     &hgetallCommand{},
-			"HMGET":       &hmgetCommand{},
-			"HMSET":       &hmsetCommand{},
-			"HSET":        &hsetCommand{},
+			//"GETBIT":      &getbitCommand{},
+			//"GETRANGE":    &getrangeCommand{},
+			//"GETSET":      &getsetCommand{},
+			//"HGET":        &hgetCommand{},
+			//"HGETALL":     &hgetallCommand{},
+			//"HMGET":       &hmgetCommand{},
+			//"HMSET":       &hmsetCommand{},
+			//"HSET":        &hsetCommand{},
 			"INCR":        &incrCommand{},
-			"INCRBY":      &incrbyCommand{},
-			"INCRBYFLOAT": &incrbyfloatCommand{},
-			"LLEN":        &llenCommand{},
-			"LPUSH":       &lpushCommand{},
-			"LRANGE":      &lrangeCommand{},
-			"MGET":        &mgetCommand{},
-			"MSET":        &msetCommand{},
-			"PING":        &pingCommand{},
-			"PSETEX":      &psetexCommand{},
-			"QUIT":        &quitCommand{},
-			"RPUSH":       &rpushCommand{},
-			"SADD":        &saddCommand{},
-			"SCARD":       &scardCommand{},
-			"SET":         &setCommand{},
-			"SETEX":       &setexCommand{},
-			"SETNX":       &setnxCommand{},
-			"SMEMBERS":    &smembersCommand{},
-			"SREM":        &sremCommand{},
-			"STRLEN":      &strlenCommand{},
-			"TTL":         &ttlCommand{},
-			"TYPE":        &typeCommand{},
+			//"INCRBY":      &incrbyCommand{},
+			//"INCRBYFLOAT": &incrbyfloatCommand{},
+			//"LLEN":        &llenCommand{},
+			//"LPUSH":       &lpushCommand{},
+			//"LRANGE":      &lrangeCommand{},
+			//"MGET":        &mgetCommand{},
+			//"MSET":        &msetCommand{},
+			//"PING":        &pingCommand{},
+			//"PSETEX":      &psetexCommand{},
+			//"QUIT":        &quitCommand{},
+			//"RPUSH":       &rpushCommand{},
+			//"SADD":        &saddCommand{},
+			//"SCARD":       &scardCommand{},
+			//"SET":         &setCommand{},
+			//"SETEX":       &setexCommand{},
+			//"SETNX":       &setnxCommand{},
+			//"SMEMBERS":    &smembersCommand{},
+			//"SREM":        &sremCommand{},
+			//"STRLEN":      &strlenCommand{},
+			//"TTL":         &ttlCommand{},
+			//"TYPE":        &typeCommand{},
 			"FLUSHALL":    &flushallCommand{},
-			"ZADD":        &zaddCommand{},
-			"ZCARD":       &zcardCommand{},
-			"ZRANGE":      &zrangeCommand{},
-			"ZREM":        &zremCommand{},
+			//"ZADD":        &zaddCommand{},
+			//"ZCARD":       &zcardCommand{},
+			//"ZRANGE":      &zrangeCommand{},
+			//"ZREM":        &zremCommand{},
 		},
 	}
 }
@@ -172,13 +196,28 @@ func (redis *PgRedis) selectCmd(cmdString string) redisCommand {
 	return implementation
 }
 
+func cloneCommand(cmd *redisproto.Command) redisProtoCommand {
+	newCmd := localRedisCommand{}
+	newCmd.last = cmd.IsLast()
+	newCmd.args = make([][]byte, 0)
+	for i := 0; i < cmd.ArgCount(); i++ {
+		origSlice := cmd.Get(i)
+		copySlice := append(make([]byte, 0, len(origSlice)), origSlice...)
+		newCmd.args = append(newCmd.args, copySlice)
+	}
+	return newCmd
+}
+
 func (redis *PgRedis) handleConnection(conn net.Conn) {
 	defer conn.Close()
 	parser := redisproto.NewParser(conn)
 	writer := redisproto.NewWriter(bufio.NewWriter(conn))
+	mode := "single"
+	queued_commands := []redisProtoCommand{}
+
 	var ew error
 	for {
-		command, err := parser.ReadCommand()
+		commandPtr, err := parser.ReadCommand()
 		if err != nil {
 			_, ok := err.(*redisproto.ProtocolError)
 			if ok {
@@ -188,14 +227,47 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 				break
 			}
 		}
+		command := cloneCommand(commandPtr)
+		log.Printf("command %v", command)
 		cmdString := strings.ToUpper(string(command.Get(0)))
-		cmd := redis.selectCmd(cmdString)
-		ew = cmd.Execute(command, redis, writer)
+		if cmdString == "QUIT" {
+			writer.WriteBulkString("OK")
+			break
+		} else if cmdString == "MULTI" {
+			mode = "multi"
+			writer.WriteBulkString("OK")
+		} else if cmdString == "DISCARD" {
+			writer.WriteBulkString("OK")
+			queued_commands = []redisProtoCommand{}
+			mode = "single"
+		} else {
+			if cmdString != "EXEC" {
+				queued_commands = append(queued_commands, command)
+			}
+
+			if mode == "multi" && cmdString != "EXEC" {
+				writer.WriteBulkString("QUEUED")
+			}
+			if mode == "single" || cmdString == "EXEC" {
+				log.Printf("about to loop (because %s), queue %v", cmdString, queued_commands)
+				for _, cmdToRun := range queued_commands {
+					cmdToRunString := strings.ToUpper(string(cmdToRun.Get(0)))
+					log.Printf("executing %s %v", cmdToRunString, cmdToRun)
+					cmd := redis.selectCmd(cmdToRunString)
+					ew = cmd.Execute(cmdToRun, redis, writer)
+				}
+				queued_commands = []redisProtoCommand{}
+			}
+
+			if cmdString == "EXEC" {
+				writer.WriteBulkString("OK")
+				mode = "single"
+			}
+		}
+		log.Printf("mode: %s, queued: %v", mode, queued_commands)
+
 		if command.IsLast() {
 			writer.Flush()
-		}
-		if cmdString == "QUIT" {
-			break
 		}
 		if ew != nil {
 			log.Println("Connection closed", ew)

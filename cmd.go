@@ -7,11 +7,11 @@ import (
 )
 
 type redisCommand interface {
-	Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error
+	Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue
 }
 
 type unrecognisedCommand struct{}
 
-func (cmd *unrecognisedCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
-	return writer.WriteError(fmt.Sprintf("Command %s not recognised", command.Get(0)))
+func (cmd *unrecognisedCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+	return newPgRedisError(fmt.Sprintf("Command %s not recognised", command.Get(0)))
 }

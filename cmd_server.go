@@ -6,11 +6,11 @@ import (
 
 type flushallCommand struct{}
 
-func (cmd *flushallCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *flushallCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
 	err := redis.flushAll()
 	if err == nil {
-		return writer.WriteBulkString("OK")
+		return newPgRedisString("OK")
 	} else {
-		return writer.WriteBulk(nil)
+		return newPgRedisNil()
 	}
 }

@@ -122,12 +122,12 @@ import (
 //
 type getCommand struct{}
 
-func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
 	success, resp, err := redis.strings.Get(command.Get(1))
 	if success {
-		return writer.WriteBulkString(string(resp.Value))
+		return newPgRedisString(string(resp.Value))
 	} else if !success && err == nil {
-		return writer.WriteBulk(nil)
+		return newPgRedisNil()
 	} else {
 		panic(err) // TODO ergh
 	}
@@ -222,15 +222,15 @@ func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 //
 type incrCommand struct{}
 
-func (cmd *incrCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *incrCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
 	key := command.Get(1)
 	newValue, err := redis.strings.Incr(key, 1)
 	if err == nil {
 		intValue, _ := strconv.Atoi(string(newValue))
-		return writer.WriteInt(int64(intValue))
+		return newPgRedisInt(int64(intValue))
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return writer.WriteBulk(nil)
+		return newPgRedisNil()
 	}
 }
 //

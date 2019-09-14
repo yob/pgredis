@@ -9,6 +9,7 @@ import (
 
 type pgRedisValue interface {
 	writeTo(io.Writer) error
+	raw() interface{}
 }
 
 type pgRedisInt struct {
@@ -27,6 +28,10 @@ func (num *pgRedisInt) writeTo(target io.Writer) error {
 	return protocolWriter.WriteInt(num.value)
 }
 
+func (num *pgRedisInt) raw() interface{} {
+	return num.value
+}
+
 type pgRedisString struct {
 	value string
 }
@@ -41,6 +46,10 @@ func newPgRedisString(value string) pgRedisValue {
 func (str *pgRedisString) writeTo(target io.Writer) error {
 	protocolWriter := redisproto.NewWriter(target)
 	return protocolWriter.WriteBulkString(str.value)
+}
+
+func (str *pgRedisString) raw() interface{} {
+	return str.value
 }
 
 type pgRedisError struct {
@@ -59,6 +68,10 @@ func (err *pgRedisError) writeTo(target io.Writer) error {
 	return protocolWriter.WriteError(err.value)
 }
 
+func (err *pgRedisError) raw() interface{} {
+	return err.value
+}
+
 type pgRedisNil struct {}
 
 // TODO should this return a pgRedisError or pgRedisValue?
@@ -69,4 +82,32 @@ func newPgRedisNil() pgRedisValue {
 func (empty *pgRedisNil) writeTo(target io.Writer) error {
 	protocolWriter := redisproto.NewWriter(target)
 	return protocolWriter.WriteBulk(nil)
+}
+
+func (empty *pgRedisNil) raw() interface{} {
+	return nil
+}
+
+type pgRedisArray struct {
+	values []pgRedisValue
+}
+
+// TODO should this return a pgRedisError or pgRedisValue?
+func newPgRedisArray(values []pgRedisValue) pgRedisValue {
+	return pgRedisArray{
+		values: values,
+	}
+}
+
+func (arr pgRedisArray) writeTo(target io.Writer) error {
+	rawValues := make([]interface{}, len(arr.values))
+	for idx, value := range arr.values {
+		rawValues[idx] = value.raw()
+	}
+	protocolWriter := redisproto.NewWriter(target)
+	return protocolWriter.WriteObjects(rawValues...)
+}
+
+func (arr pgRedisArray) raw() interface{} {
+	return arr.values
 }

@@ -41,12 +41,12 @@ func NewStringRepository(db *sql.DB) *StringRepository {
 	}
 }
 
-func (repo *StringRepository) Get(key []byte) (bool, RedisString, error) {
+func (repo *StringRepository) Get(tx *sql.Tx, key []byte) (bool, RedisString, error) {
 	result := RedisString{}
 	var expiresAt pq.NullTime
 
 	sqlStat := "SELECT key, value, expires_at FROM redisdata WHERE key = $1 AND (expires_at > now() OR expires_at IS NULL)"
-	row := repo.db.QueryRow(sqlStat, key)
+	row := tx.QueryRow(sqlStat, key)
 
 	switch err := row.Scan(&result.Key, &result.Value, &expiresAt); err {
 	case sql.ErrNoRows:
@@ -205,11 +205,11 @@ func (repo *StringRepository) InsertOrAppend(key []byte, value []byte) ([]byte, 
 	return finalValue, nil
 }
 
-func (repo *StringRepository) Incr(key []byte, by int) ([]byte, error) {
+func (repo *StringRepository) Incr(tx *sql.Tx, key []byte, by int) ([]byte, error) {
 	var finalValue []byte
 
 	sqlStat := "INSERT INTO redisdata(key, type, value) VALUES ($1, 'string', $2) ON CONFLICT (key) DO UPDATE SET type='string', value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as integer)+$4)::text)::bytea END , expires_at = NULL RETURNING value"
-	err := repo.db.QueryRow(sqlStat, key, by, by, by).Scan(&finalValue)
+	err := tx.QueryRow(sqlStat, key, by, by, by).Scan(&finalValue)
 	if err != nil {
 		return nil, err
 	}

@@ -4,6 +4,7 @@ import (
 //	"bytes"
 	"log"
 	"strconv"
+	"database/sql"
 //
 //	"github.com/32bitkid/bitreader"
 	"github.com/secmask/go-redisproto"
@@ -122,8 +123,8 @@ import (
 //
 type getCommand struct{}
 
-func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
-	success, resp, err := redis.strings.Get(command.Get(1))
+func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
+	success, resp, err := redis.strings.Get(tx, command.Get(1))
 	if success {
 		return newPgRedisString(string(resp.Value))
 	} else if !success && err == nil {
@@ -222,9 +223,9 @@ func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRe
 //
 type incrCommand struct{}
 
-func (cmd *incrCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *incrCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	key := command.Get(1)
-	newValue, err := redis.strings.Incr(key, 1)
+	newValue, err := redis.strings.Incr(tx, key, 1)
 	if err == nil {
 		intValue, _ := strconv.Atoi(string(newValue))
 		return newPgRedisInt(int64(intValue))

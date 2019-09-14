@@ -8,7 +8,7 @@ import (
 
 type saddCommand struct{}
 
-func (cmd *saddCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *saddCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
 	key := command.Get(1)
 	values := make([][]byte, 0)
 	for i := 2; i < command.ArgCount(); i++ {
@@ -18,29 +18,29 @@ func (cmd *saddCommand) Execute(command *redisproto.Command, redis *PgRedis, wri
 	updated, err := redis.sets.Add(key, values)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return writer.WriteBulk(nil)
+		return newPgRedisNil()
 	} else {
-		return writer.WriteInt(updated)
+		return newPgRedisInt(updated)
 	}
 }
 
 type scardCommand struct{}
 
-func (cmd *scardCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *scardCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
 	key := command.Get(1)
 
 	count, err := redis.sets.Cardinality(key)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return writer.WriteBulk(nil)
+		return newPgRedisNil()
 	} else {
-		return writer.WriteInt(count)
+		return newPgRedisInt(count)
 	}
 }
 
 type sremCommand struct{}
 
-func (cmd *sremCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *sremCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
 	key := command.Get(1)
 	values := make([][]byte, 0)
 	for i := 2; i < command.ArgCount(); i++ {
@@ -50,22 +50,22 @@ func (cmd *sremCommand) Execute(command *redisproto.Command, redis *PgRedis, wri
 	updated, err := redis.sets.Remove(key, values)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return writer.WriteBulk(nil)
+		return newPgRedisNil()
 	} else {
-		return writer.WriteInt(updated)
+		return newPgRedisInt(updated)
 	}
 }
 
 type smembersCommand struct{}
 
-func (cmd *smembersCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *smembersCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
 	key := command.Get(1)
 
 	values, err := redis.sets.Members(key)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return writer.WriteBulk(nil)
+		return newPgRedisNil()
 	} else {
-		return writer.WriteBulkStrings(values)
+		return newPgRedisArrayOfStrings(values)
 	}
 }

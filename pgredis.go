@@ -175,7 +175,8 @@ func (redis *PgRedis) selectCmd(cmdString string) redisCommand {
 func (redis *PgRedis) handleConnection(conn net.Conn) {
 	defer conn.Close()
 	parser := redisproto.NewParser(conn)
-	writer := redisproto.NewWriter(bufio.NewWriter(conn))
+	buffer := bufio.NewWriter(conn)
+	writer := redisproto.NewWriter(buffer)
 	var ew error
 	for {
 		command, err := parser.ReadCommand()
@@ -190,10 +191,9 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 		}
 		cmdString := strings.ToUpper(string(command.Get(0)))
 		cmd := redis.selectCmd(cmdString)
-		ew = cmd.Execute(command, redis, writer)
-		if command.IsLast() {
-			writer.Flush()
-		}
+		result := cmd.Execute(command, redis)
+		result.writeTo(buffer)
+		buffer.Flush()
 		if cmdString == "QUIT" {
 			break
 		}

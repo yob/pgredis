@@ -9,7 +9,7 @@ import (
 
 type zaddCommand struct{}
 
-func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
 	xxArgProvided := false
 	nxArgProvided := false
 	chArgProvided := false
@@ -44,29 +44,29 @@ func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis, wri
 	updated, err := redis.sortedsets.Add(key, values, chArgProvided)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return writer.WriteBulk(nil)
+		return newPgRedisNil()
 	} else {
-		return writer.WriteInt(updated)
+		return newPgRedisInt(updated)
 	}
 }
 
 type zcardCommand struct{}
 
-func (cmd *zcardCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *zcardCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
 	key := command.Get(1)
 
 	count, err := redis.sortedsets.Cardinality(key)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return writer.WriteBulk(nil)
+		return newPgRedisNil()
 	} else {
-		return writer.WriteInt(count)
+		return newPgRedisInt(count)
 	}
 }
 
 type zrangeCommand struct{}
 
-func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
 	key := command.Get(1)
 	start, _ := strconv.Atoi(string(command.Get(2)))
 	end, _ := strconv.Atoi(string(command.Get(3)))
@@ -74,16 +74,16 @@ func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, w
 
 	items, err := redis.sortedsets.Range(key, start, end, includeScores)
 	if err == nil {
-		return writer.WriteBulkStrings(items)
+		return newPgRedisArrayOfStrings(items)
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return writer.WriteBulk(nil)
+		return newPgRedisNil()
 	}
 }
 
 type zremCommand struct{}
 
-func (cmd *zremCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *zremCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
 	key := command.Get(1)
 	values := make([][]byte, 0)
 	for i := 2; i < command.ArgCount(); i++ {
@@ -94,8 +94,8 @@ func (cmd *zremCommand) Execute(command *redisproto.Command, redis *PgRedis, wri
 
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return writer.WriteError(err.Error())
+		return newPgRedisError(err.Error())
 	} else {
-		return writer.WriteInt(updated)
+		return newPgRedisInt(updated)
 	}
 }

@@ -9,7 +9,7 @@ import (
 
 type delCommand struct{}
 
-func (cmd *delCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *delCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
 	result := int64(0)
 	for i := 1; i < command.ArgCount(); i++ {
 		// TODO calling Delete in a loop like this returns the correct result, but is super
@@ -22,12 +22,12 @@ func (cmd *delCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 			result += 1
 		}
 	}
-	return writer.WriteInt(result)
+	return newPgRedisInt(result)
 }
 
 type existsCommand struct{}
 
-func (cmd *existsCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *existsCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
 	result := int64(0)
 	for i := 1; i < command.ArgCount(); i++ {
 		success, err := redis.keys.Exist(command.Get(i))
@@ -38,38 +38,38 @@ func (cmd *existsCommand) Execute(command *redisproto.Command, redis *PgRedis, w
 			result += 1
 		}
 	}
-	return writer.WriteInt(result)
+	return newPgRedisInt(result)
 }
 
 type expireCommand struct{}
 
-func (cmd *expireCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *expireCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
 	key := command.Get(1)
 	seconds, _ := strconv.Atoi(string(command.Get(2)))
 
 	success, err := redis.keys.SetExpire(key, seconds*1000)
 	if success {
-		return writer.WriteInt(1)
+		return newPgRedisInt(1)
 	} else {
 		if err != nil {
 			log.Println("ERROR: ", err.Error())
 		}
-		return writer.WriteInt(0)
+		return newPgRedisInt(0)
 	}
 }
 
 type ttlCommand struct{}
 
-func (cmd *ttlCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *ttlCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
 	key := command.Get(1)
 	// this should probably use KeyRepository and not be string specific
 	success, resp, err := redis.strings.Get(key)
 	if success && resp.WillExpire() {
-		return writer.WriteInt(resp.TTLInSeconds())
+		return newPgRedisInt(resp.TTLInSeconds())
 	} else if success {
-		return writer.WriteInt(-1) // the key exists, but it won't expire
+		return newPgRedisInt(-1) // the key exists, but it won't expire
 	} else if !success && err == nil {
-		return writer.WriteInt(-2) // the key didn't exist
+		return newPgRedisInt(-2) // the key didn't exist
 	} else {
 		panic(err) // TODO ergh
 	}
@@ -77,16 +77,16 @@ func (cmd *ttlCommand) Execute(command *redisproto.Command, redis *PgRedis, writ
 
 type typeCommand struct{}
 
-func (cmd *typeCommand) Execute(command *redisproto.Command, redis *PgRedis, writer *redisproto.Writer) error {
+func (cmd *typeCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
 	key := command.Get(1)
 	result, err := redis.keys.Type(key)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return writer.WriteBulk(nil)
+		return newPgRedisNil()
 	}
 	if result != "" {
-		return writer.WriteBulkString(result)
+		return newPgRedisString(result)
 	} else {
-		return writer.WriteBulkString("none")
+		return newPgRedisString("none")
 	}
 }

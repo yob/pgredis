@@ -1,7 +1,7 @@
 package pgredis
 
 import (
-	"bufio"
+	"bytes"
 	"database/sql"
 	"fmt"
 	"log"
@@ -174,15 +174,16 @@ func (redis *PgRedis) selectCmd(cmdString string) redisCommand {
 
 func (redis *PgRedis) handleConnection(conn net.Conn) {
 	defer conn.Close()
-	parser := redisproto.NewParser(conn)
-	writer := redisproto.NewWriter(bufio.NewWriter(conn))
+	connparser := redisproto.NewParser(conn)
+	var response bytes.Buffer
+	memorywriter := redisproto.NewWriter(&response)
 	var ew error
 	for {
-		command, err := parser.ReadCommand()
+		command, err := connparser.ReadCommand()
 		if err != nil {
 			_, ok := err.(*redisproto.ProtocolError)
 			if ok {
-				ew = writer.WriteError(err.Error())
+				ew = memorywriter.WriteError(err.Error())
 			} else {
 				log.Println(err, " closed connection to ", conn.RemoteAddr())
 				break
@@ -190,14 +191,20 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 		}
 		cmdString := strings.ToUpper(string(command.Get(0)))
 		cmd := redis.selectCmd(cmdString)
-		ew = cmd.Execute(command, redis, writer)
+		ew = cmd.Execute(command, redis, memorywriter)
+		if ew != nil {
+			// this should be rare, there's no much that can go wrong when writing to an in memory buffer
+			log.Println("Error during command execution, connection closed", ew)
+			break
+		}
 		if command.IsLast() {
-			writer.Flush()
+			_, ew = response.WriteTo(conn)
 		}
 		if cmdString == "QUIT" {
 			break
 		}
 		if ew != nil {
+			// there's a bunch that could fail here, we're writing to a network socket
 			log.Println("Connection closed", ew)
 			break
 		}

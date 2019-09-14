@@ -23,6 +23,7 @@ type PgRedis struct {
 	lists      *repositories.ListRepository
 	sets       *repositories.SetRepository
 	sortedsets *repositories.SortedSetRepository
+	db *sql.DB
 }
 
 func NewPgRedis(connStr string, maxConnections int) *PgRedis {
@@ -49,6 +50,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 		lists:      repositories.NewListRepository(db),
 		sets:       repositories.NewSetRepository(db),
 		sortedsets: repositories.NewSortedSetRepository(db),
+		db:			db,
 		commands: map[string]redisCommand{
 			//"APPEND":      &appendCommand{},
 			//"BITCOUNT":    &bitcountCommand{},
@@ -191,12 +193,26 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 		}
 		cmdString := strings.ToUpper(string(command.Get(0)))
 		cmd := redis.selectCmd(cmdString)
-		ew = cmd.Execute(command, redis, memorywriter)
+
+		// start a db transaction
+		tx, txerr := redis.db.Begin()
+		if txerr != nil {
+			ew = memorywriter.WriteError(txerr.Error())
+		}
+
+		ew = cmd.Execute(command, redis, tx, memorywriter)
 		if ew != nil {
 			// this should be rare, there's no much that can go wrong when writing to an in memory buffer
 			log.Println("Error during command execution, connection closed", ew)
 			break
 		}
+
+
+		txerr = tx.Commit()
+		if txerr != nil {
+			ew = memorywriter.WriteError(txerr.Error())
+		}
+
 		if command.IsLast() {
 			_, ew = response.WriteTo(conn)
 		}

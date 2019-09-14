@@ -1,6 +1,7 @@
 package pgredis
 
 import (
+	"bufio"
 	"bytes"
 	"database/sql"
 	"fmt"
@@ -178,8 +179,12 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 	defer conn.Close()
 	connparser := redisproto.NewParser(conn)
 	var response bytes.Buffer
+	connwriter := redisproto.NewWriter(bufio.NewWriter(conn))
 	memorywriter := redisproto.NewWriter(&response)
 	var ew error
+	var tx *sql.Tx
+	var txerr error
+	mode := "single"
 	for {
 		command, err := connparser.ReadCommand()
 		if err != nil {
@@ -192,29 +197,71 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 			}
 		}
 		cmdString := strings.ToUpper(string(command.Get(0)))
-		cmd := redis.selectCmd(cmdString)
+		if cmdString == "MULTI" {
+			log.Printf("command=MULTI\n")
+			mode = "multi"
 
-		// start a db transaction
-		tx, txerr := redis.db.Begin()
-		if txerr != nil {
-			ew = memorywriter.WriteError(txerr.Error())
+			// start a db transaction
+			tx, txerr = redis.db.Begin()
+			if txerr != nil {
+				ew = memorywriter.WriteError(txerr.Error())
+			}
+
+			log.Printf("opened MULTi transaction, sending OK\n")
+			connwriter.WriteSimpleString("OK")
+			connwriter.Flush()
 		}
 
-		ew = cmd.Execute(command, redis, tx, memorywriter)
-		if ew != nil {
-			// this should be rare, there's no much that can go wrong when writing to an in memory buffer
-			log.Println("Error during command execution, connection closed", ew)
-			break
+		if mode == "single" {
+			cmd := redis.selectCmd(cmdString)
+
+			// start a db transaction
+			tx, txerr = redis.db.Begin()
+			if txerr != nil {
+				ew = memorywriter.WriteError(txerr.Error())
+			}
+
+			ew = cmd.Execute(command, redis, tx, memorywriter)
+			if ew != nil {
+				// this should be rare, there's no much that can go wrong when writing to an in memory buffer
+				log.Println("Error during command execution, connection closed", ew)
+				break
+			}
+
+			txerr = tx.Commit()
+			if txerr != nil {
+				ew = memorywriter.WriteError(txerr.Error())
+			}
+		} else {
+			log.Printf("MULTi command execution: %s\n", cmdString)
+			if cmdString != "MULTI" && cmdString != "EXEC" {
+				cmd := redis.selectCmd(cmdString)
+				cmd.Execute(command, redis, tx, memorywriter)
+				connwriter.WriteSimpleString("QUEUED")
+				connwriter.Flush()
+			}
 		}
 
-
-		txerr = tx.Commit()
-		if txerr != nil {
-			ew = memorywriter.WriteError(txerr.Error())
+		if cmdString == "EXEC" {
+			if mode == "multi" {
+				log.Printf("about to process EXEC\n")
+				txerr = tx.Commit()
+				if txerr != nil {
+					ew = memorywriter.WriteError(txerr.Error())
+				}
+				//_, ew = response.WriteTo(conn)
+				connwriter.WriteObjects(32,33)
+				connwriter.Flush()
+				response.Reset()
+				mode = "single"
+			} else {
+				ew = memorywriter.WriteError("EXEC without MULTI")
+			}
 		}
 
-		if command.IsLast() {
+		if mode == "single" && command.IsLast() {
 			_, ew = response.WriteTo(conn)
+			response.Reset()
 		}
 		if cmdString == "QUIT" {
 			break

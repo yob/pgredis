@@ -14,13 +14,8 @@ func NewSortedSetRepository(db *sql.DB) *SortedSetRepository {
 	}
 }
 
-func (repo *SortedSetRepository) Add(key []byte, values map[string]float64, chArgProvided bool) (updated int64, err error) {
+func (repo *SortedSetRepository) Add(tx *sql.Tx, key []byte, values map[string]float64, chArgProvided bool) (updated int64, err error) {
 	count := int64(0)
-
-	tx, err := repo.db.Begin()
-	if err != nil {
-		return 0, err
-	}
 
 	// delete any expired rows in the db with this key
 	// we do this first so the count we return at the end doesn't include these rows
@@ -69,34 +64,24 @@ func (repo *SortedSetRepository) Add(key []byte, values map[string]float64, chAr
 		}
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return 0, err
-	}
-
 	return count, nil
 }
 
-func (repo *SortedSetRepository) Cardinality(key []byte) (count int64, err error) {
+func (repo *SortedSetRepository) Cardinality(tx *sql.Tx, key []byte) (count int64, err error) {
 	sqlStat := "SELECT count(*) FROM redisdata INNER JOIN rediszsets ON redisdata.key = rediszsets.key WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL)"
-	err = repo.db.QueryRow(sqlStat, key).Scan(&count)
+	err = tx.QueryRow(sqlStat, key).Scan(&count)
 	if err != nil {
 		return 0, err
 	}
 	return count, nil
 }
 
-func (repo *SortedSetRepository) Range(key []byte, start int, end int, withScores bool) ([]string, error) {
+func (repo *SortedSetRepository) Range(tx *sql.Tx, key []byte, start int, end int, withScores bool) ([]string, error) {
 	var setLength int
 	result := make([]string, 0)
 
-	tx, err := repo.db.Begin()
-	if err != nil {
-		return result, err
-	}
-
 	sqlStat := "SELECT count(*) FROM redisdata INNER JOIN rediszsets ON redisdata.key = rediszsets.key WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL)"
-	err = tx.QueryRow(sqlStat, key).Scan(&setLength)
+	err := tx.QueryRow(sqlStat, key).Scan(&setLength)
 	if err != nil {
 		return result, err
 	}
@@ -161,22 +146,11 @@ func (repo *SortedSetRepository) Range(key []byte, start int, end int, withScore
 		return result, err
 	}
 
-	// save our work, release all locks
-	err = tx.Commit()
-	if err != nil {
-		return result, err
-	}
-
 	return result, nil
 }
 
-func (repo *SortedSetRepository) Remove(key []byte, values [][]byte) (count int64, err error) {
+func (repo *SortedSetRepository) Remove(tx *sql.Tx, key []byte, values [][]byte) (count int64, err error) {
 	var lockedKey string
-
-	tx, err := repo.db.Begin()
-	if err != nil {
-		return 0, err
-	}
 
 	// delete any expired rows in the db with this key
 	// we do this first so the count we return at the end doesn't include these rows
@@ -223,12 +197,6 @@ func (repo *SortedSetRepository) Remove(key []byte, values [][]byte) (count int6
 		if err != nil {
 			return 0, err
 		}
-	}
-
-	// save our work!
-	err = tx.Commit()
-	if err != nil {
-		return 0, err
 	}
 
 	return count, nil

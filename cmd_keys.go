@@ -1,6 +1,7 @@
 package pgredis
 
 import (
+	"database/sql"
 	"log"
 	"strconv"
 
@@ -9,12 +10,12 @@ import (
 
 type delCommand struct{}
 
-func (cmd *delCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *delCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	result := int64(0)
 	for i := 1; i < command.ArgCount(); i++ {
 		// TODO calling Delete in a loop like this returns the correct result, but is super
 		//      inefficient. It'd be better to delete them in a single SQL call
-		success, err := redis.keys.Delete(command.Get(i))
+		success, err := redis.keys.Delete(tx, command.Get(i))
 		if err != nil {
 			log.Println("ERROR: ", err.Error())
 		}
@@ -27,10 +28,10 @@ func (cmd *delCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRe
 
 type existsCommand struct{}
 
-func (cmd *existsCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *existsCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	result := int64(0)
 	for i := 1; i < command.ArgCount(); i++ {
-		success, err := redis.keys.Exist(command.Get(i))
+		success, err := redis.keys.Exist(tx, command.Get(i))
 		if err != nil {
 			log.Println("ERROR: ", err.Error())
 		}
@@ -43,11 +44,11 @@ func (cmd *existsCommand) Execute(command *redisproto.Command, redis *PgRedis) p
 
 type expireCommand struct{}
 
-func (cmd *expireCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *expireCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	key := command.Get(1)
 	seconds, _ := strconv.Atoi(string(command.Get(2)))
 
-	success, err := redis.keys.SetExpire(key, seconds*1000)
+	success, err := redis.keys.SetExpire(tx, key, seconds*1000)
 	if success {
 		return newPgRedisInt(1)
 	} else {
@@ -60,10 +61,10 @@ func (cmd *expireCommand) Execute(command *redisproto.Command, redis *PgRedis) p
 
 type ttlCommand struct{}
 
-func (cmd *ttlCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *ttlCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	key := command.Get(1)
 	// this should probably use KeyRepository and not be string specific
-	success, resp, err := redis.strings.Get(key)
+	success, resp, err := redis.strings.Get(tx, key)
 	if success && resp.WillExpire() {
 		return newPgRedisInt(resp.TTLInSeconds())
 	} else if success {
@@ -77,9 +78,9 @@ func (cmd *ttlCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRe
 
 type typeCommand struct{}
 
-func (cmd *typeCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *typeCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	key := command.Get(1)
-	result, err := redis.keys.Type(key)
+	result, err := redis.keys.Type(tx, key)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
 		return newPgRedisNil()

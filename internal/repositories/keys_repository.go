@@ -16,11 +16,7 @@ func NewKeyRepository(db *sql.DB) *KeyRepository {
 	}
 }
 
-func (repo *KeyRepository) Delete(key []byte) (updated bool, err error) {
-	tx, err := repo.db.Begin()
-	if err != nil {
-		return false, err
-	}
+func (repo *KeyRepository) Delete(tx *sql.Tx, key []byte) (updated bool, err error) {
 
 	// delete any expired rows in the db with this key
 	// we do this first so the count we return at the end doesn't include these rows
@@ -41,33 +37,28 @@ func (repo *KeyRepository) Delete(key []byte) (updated bool, err error) {
 		return false, err
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return false, err
-	}
-
 	return count > 0, nil
 }
 
-func (repo *KeyRepository) Exist(key []byte) (bool, error) {
+func (repo *KeyRepository) Exist(tx *sql.Tx, key []byte) (bool, error) {
 	var count int
 
 	sqlStat := "SELECT count(*) FROM redisdata WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL)"
-	err := repo.db.QueryRow(sqlStat, key).Scan(&count)
+	err := tx.QueryRow(sqlStat, key).Scan(&count)
 	if err != nil {
 		return false, err
 	}
 	return count > 0, nil
 }
 
-func (repo *KeyRepository) SetExpire(key []byte, expiry_millis int) (updated bool, err error) {
+func (repo *KeyRepository) SetExpire(tx *sql.Tx, key []byte, expiry_millis int) (updated bool, err error) {
 	if expiry_millis <= 0 {
 		return false, errors.New("expiry must be 1ms or more")
 	}
 
 	sqlStat := "UPDATE redisdata SET expires_at=(now() + cast($2 as interval)) WHERE key=$1 AND (expires_at > now() OR expires_at IS NULL)"
 	interval := fmt.Sprintf("%d milliseconds", expiry_millis)
-	res, err := repo.db.Exec(sqlStat, key, interval)
+	res, err := tx.Exec(sqlStat, key, interval)
 	if err != nil {
 		return false, err
 	}
@@ -80,11 +71,11 @@ func (repo *KeyRepository) SetExpire(key []byte, expiry_millis int) (updated boo
 	return updated, nil
 }
 
-func (repo *KeyRepository) Type(key []byte) (string, error) {
+func (repo *KeyRepository) Type(tx *sql.Tx, key []byte) (string, error) {
 	var keyType string
 
 	sqlStat := "SELECT type FROM redisdata WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL)"
-	row := repo.db.QueryRow(sqlStat, key)
+	row := tx.QueryRow(sqlStat, key)
 
 	switch err := row.Scan(&keyType); err {
 	case sql.ErrNoRows:

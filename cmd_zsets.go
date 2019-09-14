@@ -1,6 +1,7 @@
 package pgredis
 
 import (
+	"database/sql"
 	"log"
 	"strconv"
 
@@ -9,7 +10,7 @@ import (
 
 type zaddCommand struct{}
 
-func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	xxArgProvided := false
 	nxArgProvided := false
 	chArgProvided := false
@@ -41,7 +42,7 @@ func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis) pgR
 	log.Printf("incrArgProvided: %v", incrArgProvided)
 	log.Printf("values: %v", values)
 
-	updated, err := redis.sortedsets.Add(key, values, chArgProvided)
+	updated, err := redis.sortedsets.Add(tx, key, values, chArgProvided)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
 		return newPgRedisNil()
@@ -52,10 +53,10 @@ func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis) pgR
 
 type zcardCommand struct{}
 
-func (cmd *zcardCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *zcardCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	key := command.Get(1)
 
-	count, err := redis.sortedsets.Cardinality(key)
+	count, err := redis.sortedsets.Cardinality(tx, key)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
 		return newPgRedisNil()
@@ -66,13 +67,13 @@ func (cmd *zcardCommand) Execute(command *redisproto.Command, redis *PgRedis) pg
 
 type zrangeCommand struct{}
 
-func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	key := command.Get(1)
 	start, _ := strconv.Atoi(string(command.Get(2)))
 	end, _ := strconv.Atoi(string(command.Get(3)))
 	includeScores := string(command.Get(4)) == "WITHSCORES"
 
-	items, err := redis.sortedsets.Range(key, start, end, includeScores)
+	items, err := redis.sortedsets.Range(tx, key, start, end, includeScores)
 	if err == nil {
 		return newPgRedisArrayOfStrings(items)
 	} else {
@@ -83,14 +84,14 @@ func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis) p
 
 type zremCommand struct{}
 
-func (cmd *zremCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *zremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	key := command.Get(1)
 	values := make([][]byte, 0)
 	for i := 2; i < command.ArgCount(); i++ {
 		values = append(values, command.Get(i))
 	}
 
-	updated, err := redis.sortedsets.Remove(key, values)
+	updated, err := redis.sortedsets.Remove(tx, key, values)
 
 	if err != nil {
 		log.Println("ERROR: ", err.Error())

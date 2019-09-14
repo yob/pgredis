@@ -23,6 +23,7 @@ type PgRedis struct {
 	lists      *repositories.ListRepository
 	sets       *repositories.SetRepository
 	sortedsets *repositories.SortedSetRepository
+	db         *sql.DB
 }
 
 func NewPgRedis(connStr string, maxConnections int) *PgRedis {
@@ -49,6 +50,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 		lists:      repositories.NewListRepository(db),
 		sets:       repositories.NewSetRepository(db),
 		sortedsets: repositories.NewSortedSetRepository(db),
+		db:         db,
 		commands: map[string]redisCommand{
 			"APPEND":      &appendCommand{},
 			"BITCOUNT":    &bitcountCommand{},
@@ -191,9 +193,28 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 		}
 		cmdString := strings.ToUpper(string(command.Get(0)))
 		cmd := redis.selectCmd(cmdString)
-		result := cmd.Execute(command, redis)
-		result.writeTo(buffer)
+
+		// start a db transaction
+		tx, txerr := redis.db.Begin()
+		if txerr != nil {
+			ew = writer.WriteError(txerr.Error())
+		}
+
+		result := cmd.Execute(command, redis, tx)
+		ew = result.writeTo(buffer)
+		if ew != nil {
+			// this should be rare, there's no much that can go wrong when writing to an in memory buffer
+			log.Println("Error during command execution, connection closed", ew)
+			break
+		}
+
 		buffer.Flush()
+
+		txerr = tx.Commit()
+		if txerr != nil {
+			ew = writer.WriteError(txerr.Error())
+		}
+
 		if cmdString == "QUIT" {
 			break
 		}
@@ -204,8 +225,8 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 	}
 }
 
-func (redis *PgRedis) flushAll() error {
-	err := redis.strings.FlushAll()
+func (redis *PgRedis) flushAll(tx *sql.Tx) error {
+	err := redis.strings.FlushAll(tx)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 package pgredis
 
 import (
+	"database/sql"
 	"log"
 	"strconv"
 
@@ -9,9 +10,9 @@ import (
 
 type llenCommand struct{}
 
-func (cmd *llenCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *llenCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	key := command.Get(1)
-	length, err := redis.lists.Length(key)
+	length, err := redis.lists.Length(tx, key)
 	if err != nil {
 		return newPgRedisNil()
 	}
@@ -20,13 +21,13 @@ func (cmd *llenCommand) Execute(command *redisproto.Command, redis *PgRedis) pgR
 
 type lpushCommand struct{}
 
-func (cmd *lpushCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *lpushCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	values := make([][]byte, 0)
 	key := command.Get(1)
 	for i := 2; i < command.ArgCount(); i++ {
 		values = append(values, command.Get(i))
 	}
-	newLength, err := redis.lists.LeftPush(key, values)
+	newLength, err := redis.lists.LeftPush(tx, key, values)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
 		return newPgRedisNil()
@@ -36,11 +37,11 @@ func (cmd *lpushCommand) Execute(command *redisproto.Command, redis *PgRedis) pg
 
 type lrangeCommand struct{}
 
-func (cmd *lrangeCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *lrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	key := command.Get(1)
 	start, _ := strconv.Atoi(string(command.Get(2)))
 	end, _ := strconv.Atoi(string(command.Get(3)))
-	items, err := redis.lists.Lrange(key, start, end)
+	items, err := redis.lists.Lrange(tx, key, start, end)
 	if err == nil {
 		return newPgRedisArrayOfStrings(items)
 	} else {
@@ -51,13 +52,13 @@ func (cmd *lrangeCommand) Execute(command *redisproto.Command, redis *PgRedis) p
 
 type rpushCommand struct{}
 
-func (cmd *rpushCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *rpushCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	values := make([][]byte, 0)
 	key := command.Get(1)
 	for i := 2; i < command.ArgCount(); i++ {
 		values = append(values, command.Get(i))
 	}
-	newLength, err := redis.lists.RightPush(key, values)
+	newLength, err := redis.lists.RightPush(tx, key, values)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
 		return newPgRedisNil()

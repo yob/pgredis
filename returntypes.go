@@ -6,7 +6,6 @@ import (
 	"github.com/secmask/go-redisproto"
 )
 
-
 type pgRedisValue interface {
 	writeTo(io.Writer) error
 	raw() interface{}
@@ -72,7 +71,7 @@ func (err *pgRedisError) raw() interface{} {
 	return err.value
 }
 
-type pgRedisNil struct {}
+type pgRedisNil struct{}
 
 // TODO should this return a pgRedisError or pgRedisValue?
 func newPgRedisNil() pgRedisValue {

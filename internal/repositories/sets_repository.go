@@ -14,13 +14,8 @@ func NewSetRepository(db *sql.DB) *SetRepository {
 	}
 }
 
-func (repo *SetRepository) Add(key []byte, values [][]byte) (updated int64, err error) {
+func (repo *SetRepository) Add(tx *sql.Tx, key []byte, values [][]byte) (updated int64, err error) {
 	count := int64(0)
-
-	tx, err := repo.db.Begin()
-	if err != nil {
-		return 0, err
-	}
 
 	// delete any expired rows in the db with this key
 	// we do this first so the count we return at the end doesn't include these rows
@@ -56,30 +51,20 @@ func (repo *SetRepository) Add(key []byte, values [][]byte) (updated int64, err 
 		count += rowCount
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return 0, err
-	}
-
 	return count, nil
 }
 
-func (repo *SetRepository) Cardinality(key []byte) (count int64, err error) {
+func (repo *SetRepository) Cardinality(tx *sql.Tx, key []byte) (count int64, err error) {
 	sqlStat := "SELECT count(*) FROM redisdata INNER JOIN redissets ON redisdata.key = redissets.key WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL)"
-	err = repo.db.QueryRow(sqlStat, key).Scan(&count)
+	err = tx.QueryRow(sqlStat, key).Scan(&count)
 	if err != nil {
 		return 0, err
 	}
 	return count, nil
 }
 
-func (repo *SetRepository) Remove(key []byte, values [][]byte) (count int64, err error) {
+func (repo *SetRepository) Remove(tx *sql.Tx, key []byte, values [][]byte) (count int64, err error) {
 	var lockedKey string
-
-	tx, err := repo.db.Begin()
-	if err != nil {
-		return 0, err
-	}
 
 	// delete any expired rows in the db with this key
 	// we do this first so the count we return at the end doesn't include these rows
@@ -128,16 +113,10 @@ func (repo *SetRepository) Remove(key []byte, values [][]byte) (count int64, err
 		}
 	}
 
-	// save our work!
-	err = tx.Commit()
-	if err != nil {
-		return 0, err
-	}
-
 	return count, nil
 }
 
-func (repo *SetRepository) Members(key []byte) (values []string, err error) {
+func (repo *SetRepository) Members(tx *sql.Tx, key []byte) (values []string, err error) {
 	result := make([]string, 0)
 
 	sqlStat := `
@@ -146,7 +125,7 @@ func (repo *SetRepository) Members(key []byte) (values []string, err error) {
 			WHERE redisdata.key = $1 AND
 				(redisdata.expires_at > now() OR expires_at IS NULL)
 	`
-	rows, err := repo.db.Query(sqlStat, key)
+	rows, err := tx.Query(sqlStat, key)
 	if err != nil {
 		return result, err
 	}

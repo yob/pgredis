@@ -14,7 +14,7 @@ func NewHashRepository(db *sql.DB) *HashRepository {
 	}
 }
 
-func (repo *HashRepository) Get(key []byte, field []byte) (success bool, value []byte, err error) {
+func (repo *HashRepository) Get(tx *sql.Tx, key []byte, field []byte) (success bool, value []byte, err error) {
 
 	sqlStat := `
 			SELECT redishashes.value
@@ -24,7 +24,7 @@ func (repo *HashRepository) Get(key []byte, field []byte) (success bool, value [
 				(redisdata.expires_at > now() OR expires_at IS NULL)
 	`
 
-	row := repo.db.QueryRow(sqlStat, key, field)
+	row := tx.QueryRow(sqlStat, key, field)
 
 	switch err := row.Scan(&value); err {
 	case sql.ErrNoRows:
@@ -36,7 +36,7 @@ func (repo *HashRepository) Get(key []byte, field []byte) (success bool, value [
 	}
 }
 
-func (repo *HashRepository) GetAll(key []byte) (fields_and_values []string, err error) {
+func (repo *HashRepository) GetAll(tx *sql.Tx, key []byte) (fields_and_values []string, err error) {
 	fields_and_values = []string{}
 	sqlStat := `
 			SELECT redishashes.field, redishashes.value
@@ -45,7 +45,7 @@ func (repo *HashRepository) GetAll(key []byte) (fields_and_values []string, err 
 				(redisdata.expires_at > now() OR expires_at IS NULL)
 	`
 
-	rows, err := repo.db.Query(sqlStat, key)
+	rows, err := tx.Query(sqlStat, key)
 	if err != nil {
 		return fields_and_values, err
 	}
@@ -67,11 +67,7 @@ func (repo *HashRepository) GetAll(key []byte) (fields_and_values []string, err 
 	return fields_and_values, nil
 }
 
-func (repo *HashRepository) Set(key []byte, field []byte, value []byte) (inserted int64, err error) {
-	tx, err := repo.db.Begin()
-	if err != nil {
-		return 0, err
-	}
+func (repo *HashRepository) Set(tx *sql.Tx, key []byte, field []byte, value []byte) (inserted int64, err error) {
 
 	// delete any expired rows in the db with this key
 	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
@@ -114,20 +110,10 @@ func (repo *HashRepository) Set(key []byte, field []byte, value []byte) (inserte
 		inserted, _ = res.RowsAffected()
 	}
 
-	// save our work, release all locks
-	err = tx.Commit()
-	if err != nil {
-		return 0, err
-	}
-
 	return inserted, nil
 }
 
-func (repo *HashRepository) SetMultiple(key string, fields_and_values map[string]string) (err error) {
-	tx, err := repo.db.Begin()
-	if err != nil {
-		return err
-	}
+func (repo *HashRepository) SetMultiple(tx *sql.Tx, key string, fields_and_values map[string]string) (err error) {
 
 	// delete any expired rows in the db with this key
 	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
@@ -159,12 +145,6 @@ func (repo *HashRepository) SetMultiple(key string, fields_and_values map[string
 		if err != nil {
 			return err
 		}
-	}
-
-	// save our work, release all locks
-	err = tx.Commit()
-	if err != nil {
-		return err
 	}
 
 	return nil

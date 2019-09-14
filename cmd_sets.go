@@ -1,6 +1,7 @@
 package pgredis
 
 import (
+	"database/sql"
 	"log"
 
 	"github.com/secmask/go-redisproto"
@@ -8,14 +9,14 @@ import (
 
 type saddCommand struct{}
 
-func (cmd *saddCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *saddCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	key := command.Get(1)
 	values := make([][]byte, 0)
 	for i := 2; i < command.ArgCount(); i++ {
 		values = append(values, command.Get(i))
 	}
 
-	updated, err := redis.sets.Add(key, values)
+	updated, err := redis.sets.Add(tx, key, values)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
 		return newPgRedisNil()
@@ -26,10 +27,10 @@ func (cmd *saddCommand) Execute(command *redisproto.Command, redis *PgRedis) pgR
 
 type scardCommand struct{}
 
-func (cmd *scardCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *scardCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	key := command.Get(1)
 
-	count, err := redis.sets.Cardinality(key)
+	count, err := redis.sets.Cardinality(tx, key)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
 		return newPgRedisNil()
@@ -40,14 +41,14 @@ func (cmd *scardCommand) Execute(command *redisproto.Command, redis *PgRedis) pg
 
 type sremCommand struct{}
 
-func (cmd *sremCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *sremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	key := command.Get(1)
 	values := make([][]byte, 0)
 	for i := 2; i < command.ArgCount(); i++ {
 		values = append(values, command.Get(i))
 	}
 
-	updated, err := redis.sets.Remove(key, values)
+	updated, err := redis.sets.Remove(tx, key, values)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
 		return newPgRedisNil()
@@ -58,10 +59,10 @@ func (cmd *sremCommand) Execute(command *redisproto.Command, redis *PgRedis) pgR
 
 type smembersCommand struct{}
 
-func (cmd *smembersCommand) Execute(command *redisproto.Command, redis *PgRedis) pgRedisValue {
+func (cmd *smembersCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
 	key := command.Get(1)
 
-	values, err := redis.sets.Members(key)
+	values, err := redis.sets.Members(tx, key)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
 		return newPgRedisNil()

@@ -41,12 +41,12 @@ func NewStringRepository(db *sql.DB) *StringRepository {
 	}
 }
 
-func (repo *StringRepository) Get(key []byte) (bool, RedisString, error) {
+func (repo *StringRepository) Get(tx *sql.Tx, key []byte) (bool, RedisString, error) {
 	result := RedisString{}
 	var expiresAt pq.NullTime
 
 	sqlStat := "SELECT key, value, expires_at FROM redisdata WHERE key = $1 AND (expires_at > now() OR expires_at IS NULL)"
-	row := repo.db.QueryRow(sqlStat, key)
+	row := tx.QueryRow(sqlStat, key)
 
 	switch err := row.Scan(&result.Key, &result.Value, &expiresAt); err {
 	case sql.ErrNoRows:
@@ -61,16 +61,16 @@ func (repo *StringRepository) Get(key []byte) (bool, RedisString, error) {
 	}
 }
 
-func (repo *StringRepository) InsertOrUpdate(key []byte, value []byte, expiry_millis int) (err error) {
+func (repo *StringRepository) InsertOrUpdate(tx *sql.Tx, key []byte, value []byte, expiry_millis int) (err error) {
 	// TODO consider merging this into InsertOrUpdateMultiple. Insterting one thing is just a specical
 	// case of inserting many things
 	if expiry_millis == 0 {
 		sqlStat := "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, NULL) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = NULL"
-		_, err = repo.db.Exec(sqlStat, key, value)
+		_, err = tx.Exec(sqlStat, key, value)
 	} else {
 		sqlStat := "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, now() + cast($3 as interval)) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = EXCLUDED.expires_at"
 		interval := fmt.Sprintf("%d milliseconds", expiry_millis)
-		_, err = repo.db.Exec(sqlStat, key, value, interval)
+		_, err = tx.Exec(sqlStat, key, value, interval)
 	}
 	if err != nil {
 		return err
@@ -78,12 +78,7 @@ func (repo *StringRepository) InsertOrUpdate(key []byte, value []byte, expiry_mi
 	return nil
 }
 
-func (repo *StringRepository) InsertOrUpdateMultiple(items map[string]string) (err error) {
-	tx, err := repo.db.Begin()
-	if err != nil {
-		return err
-	}
-
+func (repo *StringRepository) InsertOrUpdateMultiple(tx *sql.Tx, items map[string]string) (err error) {
 	for key, value := range items {
 		// TODO could we do this in a single SQL statement?
 		sqlStat := "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, NULL) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = NULL"
@@ -93,18 +88,10 @@ func (repo *StringRepository) InsertOrUpdateMultiple(items map[string]string) (e
 		}
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
-func (repo *StringRepository) InsertOrSkip(key []byte, value []byte, expiry_millis int) (inserted bool, err error) {
-	tx, err := repo.db.Begin()
-	if err != nil {
-		return false, err
-	}
+func (repo *StringRepository) InsertOrSkip(tx *sql.Tx, key []byte, value []byte, expiry_millis int) (inserted bool, err error) {
 
 	// delete any expired rows in the db with this key
 	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
@@ -130,19 +117,10 @@ func (repo *StringRepository) InsertOrSkip(key []byte, value []byte, expiry_mill
 		return false, err
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return false, err
-	}
-
 	return inserted, nil
 }
 
-func (repo *StringRepository) UpdateOrSkip(key []byte, value []byte, expiry_millis int) (updated bool, err error) {
-	tx, err := repo.db.Begin()
-	if err != nil {
-		return false, err
-	}
+func (repo *StringRepository) UpdateOrSkip(tx *sql.Tx, key []byte, value []byte, expiry_millis int) (updated bool, err error) {
 
 	// delete any expired rows in the db with this key
 	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
@@ -168,25 +146,15 @@ func (repo *StringRepository) UpdateOrSkip(key []byte, value []byte, expiry_mill
 		return false, err
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return false, err
-	}
-
 	return updated, nil
 }
 
-func (repo *StringRepository) InsertOrAppend(key []byte, value []byte) ([]byte, error) {
+func (repo *StringRepository) InsertOrAppend(tx *sql.Tx, key []byte, value []byte) ([]byte, error) {
 	var finalValue []byte
-
-	tx, err := repo.db.Begin()
-	if err != nil {
-		return nil, err
-	}
 
 	// delete any expired rows in the db with this key
 	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
-	_, err = tx.Exec(sqlStat, key)
+	_, err := tx.Exec(sqlStat, key)
 	if err != nil {
 		return nil, err
 	}
@@ -197,39 +165,34 @@ func (repo *StringRepository) InsertOrAppend(key []byte, value []byte) ([]byte, 
 		return nil, err
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return nil, err
-	}
-
 	return finalValue, nil
 }
 
-func (repo *StringRepository) Incr(key []byte, by int) ([]byte, error) {
+func (repo *StringRepository) Incr(tx *sql.Tx, key []byte, by int) ([]byte, error) {
 	var finalValue []byte
 
 	sqlStat := "INSERT INTO redisdata(key, type, value) VALUES ($1, 'string', $2) ON CONFLICT (key) DO UPDATE SET type='string', value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as integer)+$4)::text)::bytea END , expires_at = NULL RETURNING value"
-	err := repo.db.QueryRow(sqlStat, key, by, by, by).Scan(&finalValue)
+	err := tx.QueryRow(sqlStat, key, by, by, by).Scan(&finalValue)
 	if err != nil {
 		return nil, err
 	}
 	return finalValue, nil
 }
 
-func (repo *StringRepository) IncrDecimal(key []byte, by float64) ([]byte, error) {
+func (repo *StringRepository) IncrDecimal(tx *sql.Tx, key []byte, by float64) ([]byte, error) {
 	var finalValue []byte
 
 	sqlStat := "INSERT INTO redisdata(key, type, value) VALUES ($1, 'string', $2) ON CONFLICT (key) DO UPDATE SET type='string', value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as decimal)+$4)::text)::bytea END, expires_at = NULL RETURNING value"
-	err := repo.db.QueryRow(sqlStat, key, by, by, by).Scan(&finalValue)
+	err := tx.QueryRow(sqlStat, key, by, by, by).Scan(&finalValue)
 	if err != nil {
 		return nil, err
 	}
 	return finalValue, nil
 }
 
-func (repo *StringRepository) FlushAll() error {
+func (repo *StringRepository) FlushAll(tx *sql.Tx) error {
 	sqlStat := "DELETE FROM redisdata"
-	_, err := repo.db.Exec(sqlStat)
+	_, err := tx.Exec(sqlStat)
 	if err != nil {
 		return err
 	}

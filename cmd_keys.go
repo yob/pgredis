@@ -72,7 +72,7 @@ func (cmd *ttlCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *
 	} else if !success && err == nil {
 		return newPgRedisInt(-2) // the key didn't exist
 	} else {
-		panic(err) // TODO ergh
+		return newPgRedisError(err.Error())
 	}
 }
 

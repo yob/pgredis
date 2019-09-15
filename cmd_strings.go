@@ -130,7 +130,7 @@ func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *
 	} else if !success && err == nil {
 		return newPgRedisNil()
 	} else {
-		panic(err) // TODO ergh
+		return newPgRedisError(err.Error())
 	}
 }
 
@@ -175,7 +175,7 @@ func (cmd *getsetCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 		} else if !getSuccess && err == nil {
 			return newPgRedisNil()
 		} else {
-			panic(err) // TODO ergh
+			return newPgRedisError(err.Error())
 		}
 	} else {
 		log.Println("DB ERROR: ", err.Error())
@@ -411,7 +411,7 @@ func (cmd *strlenCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 	} else if !success && err == nil {
 		return newPgRedisInt(0)
 	} else {
-		panic(err) // TODO ergh
+		return newPgRedisError(err.Error())
 	}
 }
 

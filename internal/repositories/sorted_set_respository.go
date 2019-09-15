@@ -4,14 +4,10 @@ import (
 	"database/sql"
 )
 
-type SortedSetRepository struct {
-	db *sql.DB
-}
+type SortedSetRepository struct{}
 
-func NewSortedSetRepository(db *sql.DB) *SortedSetRepository {
-	return &SortedSetRepository{
-		db: db,
-	}
+func NewSortedSetRepository() *SortedSetRepository {
+	return &SortedSetRepository{}
 }
 
 func (repo *SortedSetRepository) Add(tx *sql.Tx, key []byte, values map[string]float64, chArgProvided bool) (updated int64, err error) {

@@ -4,14 +4,10 @@ import (
 	"database/sql"
 )
 
-type SetRepository struct {
-	db *sql.DB
-}
+type SetRepository struct{}
 
-func NewSetRepository(db *sql.DB) *SetRepository {
-	return &SetRepository{
-		db: db,
-	}
+func NewSetRepository() *SetRepository {
+	return &SetRepository{}
 }
 
 func (repo *SetRepository) Add(tx *sql.Tx, key []byte, values [][]byte) (updated int64, err error) {

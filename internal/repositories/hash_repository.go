@@ -4,14 +4,10 @@ import (
 	"database/sql"
 )
 
-type HashRepository struct {
-	db *sql.DB
-}
+type HashRepository struct{}
 
-func NewHashRepository(db *sql.DB) *HashRepository {
-	return &HashRepository{
-		db: db,
-	}
+func NewHashRepository() *HashRepository {
+	return &HashRepository{}
 }
 
 func (repo *HashRepository) Get(tx *sql.Tx, key []byte, field []byte) (success bool, value []byte, err error) {

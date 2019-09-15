@@ -31,14 +31,10 @@ func (str *RedisString) WillExpire() bool {
 	}
 }
 
-type StringRepository struct {
-	db *sql.DB
-}
+type StringRepository struct{}
 
-func NewStringRepository(db *sql.DB) *StringRepository {
-	return &StringRepository{
-		db: db,
-	}
+func NewStringRepository() *StringRepository {
+	return &StringRepository{}
 }
 
 func (repo *StringRepository) Get(tx *sql.Tx, key []byte) (bool, RedisString, error) {

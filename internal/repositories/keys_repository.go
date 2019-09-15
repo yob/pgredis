@@ -6,14 +6,10 @@ import (
 	"fmt"
 )
 
-type KeyRepository struct {
-	db *sql.DB
-}
+type KeyRepository struct{}
 
-func NewKeyRepository(db *sql.DB) *KeyRepository {
-	return &KeyRepository{
-		db: db,
-	}
+func NewKeyRepository() *KeyRepository {
+	return &KeyRepository{}
 }
 
 func (repo *KeyRepository) Delete(tx *sql.Tx, key []byte) (updated bool, err error) {

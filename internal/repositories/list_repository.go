@@ -7,14 +7,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type ListRepository struct {
-	db *sql.DB
-}
+type ListRepository struct{}
 
-func NewListRepository(db *sql.DB) *ListRepository {
-	return &ListRepository{
-		db: db,
-	}
+func NewListRepository() *ListRepository {
+	return &ListRepository{}
 }
 
 func (repo *ListRepository) Length(tx *sql.Tx, key []byte) (int, error) {

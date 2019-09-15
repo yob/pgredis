@@ -44,12 +44,12 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 	}
 
 	return &PgRedis{
-		hashes:     repositories.NewHashRepository(db),
-		keys:       repositories.NewKeyRepository(db),
-		strings:    repositories.NewStringRepository(db),
-		lists:      repositories.NewListRepository(db),
-		sets:       repositories.NewSetRepository(db),
-		sortedsets: repositories.NewSortedSetRepository(db),
+		hashes:     repositories.NewHashRepository(),
+		keys:       repositories.NewKeyRepository(),
+		strings:    repositories.NewStringRepository(),
+		lists:      repositories.NewListRepository(),
+		sets:       repositories.NewSetRepository(),
+		sortedsets: repositories.NewSortedSetRepository(),
 		db:         db,
 		commands: map[string]redisCommand{
 			"APPEND":      &appendCommand{},

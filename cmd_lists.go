@@ -14,7 +14,7 @@ func (cmd *llenCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	key := command.Get(1)
 	length, err := redis.lists.Length(tx, key)
 	if err != nil {
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 	return newPgRedisInt(int64(length))
 }
@@ -30,7 +30,7 @@ func (cmd *lpushCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 	newLength, err := redis.lists.LeftPush(tx, key, values)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 	return newPgRedisInt(int64(newLength))
 }
@@ -46,7 +46,7 @@ func (cmd *lrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 		return newPgRedisArrayOfStrings(items)
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 }
 
@@ -61,7 +61,7 @@ func (cmd *rpushCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 	newLength, err := redis.lists.RightPush(tx, key, values)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 	return newPgRedisInt(int64(newLength))
 }

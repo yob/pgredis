@@ -45,7 +45,7 @@ func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	updated, err := redis.sortedsets.Add(tx, key, values, chArgProvided)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	} else {
 		return newPgRedisInt(updated)
 	}
@@ -59,7 +59,7 @@ func (cmd *zcardCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 	count, err := redis.sortedsets.Cardinality(tx, key)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	} else {
 		return newPgRedisInt(count)
 	}
@@ -78,7 +78,7 @@ func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 		return newPgRedisArrayOfStrings(items)
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 }
 

@@ -83,7 +83,7 @@ func (cmd *typeCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	result, err := redis.keys.Type(tx, key)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 	if result != "" {
 		return newPgRedisString(result)

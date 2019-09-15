@@ -18,7 +18,7 @@ func (cmd *hgetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 		return newPgRedisNil()
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 }
 
@@ -67,7 +67,7 @@ func (cmd *hmsetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 		return newPgRedisString("OK")
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 }
 
@@ -80,7 +80,7 @@ func (cmd *hsetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	inserted, err := redis.hashes.Set(tx, key, field, value)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	} else {
 		return newPgRedisInt(inserted)
 	}

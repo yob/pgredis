@@ -20,7 +20,7 @@ func (cmd *appendCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 		return newPgRedisInt(int64(len(newValue)))
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 }
 
@@ -102,7 +102,7 @@ func (cmd *decrCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 		return newPgRedisInt(int64(intValue))
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 }
 
@@ -117,7 +117,7 @@ func (cmd *decrbyCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 		return newPgRedisInt(int64(intValue))
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 }
 
@@ -179,7 +179,7 @@ func (cmd *getsetCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 		}
 	} else {
 		log.Println("DB ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 }
 
@@ -231,7 +231,7 @@ func (cmd *incrCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 		return newPgRedisInt(int64(intValue))
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 }
 
@@ -246,7 +246,7 @@ func (cmd *incrbyCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 		return newPgRedisInt(int64(intValue))
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 }
 
@@ -260,7 +260,7 @@ func (cmd *incrbyfloatCommand) Execute(command *redisproto.Command, redis *PgRed
 		return newPgRedisString(string(newValue))
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 }
 
@@ -296,7 +296,7 @@ func (cmd *msetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 		return newPgRedisString("OK")
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 }
 
@@ -325,7 +325,7 @@ func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *
 			}
 		} else {
 			log.Println("ERROR: ", err.Error())
-			return newPgRedisNil()
+			return newPgRedisError(err.Error())
 		}
 	} else if nxArgProvided { // only set the key if it doesn't already exists
 		updated, err := redis.strings.InsertOrSkip(tx, command.Get(1), command.Get(2), expiry_millis)
@@ -337,7 +337,7 @@ func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *
 			}
 		} else {
 			log.Println("ERROR: ", err.Error())
-			return newPgRedisNil()
+			return newPgRedisError(err.Error())
 		}
 	} else {
 		err := redis.strings.InsertOrUpdate(tx, command.Get(1), command.Get(2), expiry_millis)
@@ -345,7 +345,7 @@ func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *
 			return newPgRedisString("OK")
 		} else {
 			log.Println("ERROR: ", err.Error())
-			return newPgRedisNil()
+			return newPgRedisError(err.Error())
 		}
 	}
 }
@@ -363,7 +363,7 @@ func (cmd *setexCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 		return newPgRedisString("OK")
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 }
 
@@ -378,7 +378,7 @@ func (cmd *psetexCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 		return newPgRedisString("OK")
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 }
 
@@ -398,7 +398,7 @@ func (cmd *setnxCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 		}
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 }
 

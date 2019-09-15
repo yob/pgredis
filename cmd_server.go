@@ -12,6 +12,6 @@ func (cmd *flushallCommand) Execute(command *redisproto.Command, redis *PgRedis,
 	if err == nil {
 		return newPgRedisString("OK")
 	} else {
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	}
 }

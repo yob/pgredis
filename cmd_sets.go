@@ -19,7 +19,7 @@ func (cmd *saddCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	updated, err := redis.sets.Add(tx, key, values)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	} else {
 		return newPgRedisInt(updated)
 	}
@@ -33,7 +33,7 @@ func (cmd *scardCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 	count, err := redis.sets.Cardinality(tx, key)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	} else {
 		return newPgRedisInt(count)
 	}
@@ -51,7 +51,7 @@ func (cmd *sremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	updated, err := redis.sets.Remove(tx, key, values)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	} else {
 		return newPgRedisInt(updated)
 	}
@@ -65,7 +65,7 @@ func (cmd *smembersCommand) Execute(command *redisproto.Command, redis *PgRedis,
 	values, err := redis.sets.Members(tx, key)
 	if err != nil {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisNil()
+		return newPgRedisError(err.Error())
 	} else {
 		return newPgRedisArrayOfStrings(values)
 	}

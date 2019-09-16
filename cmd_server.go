@@ -8,7 +8,7 @@ import (
 type flushallCommand struct{}
 
 func (cmd *flushallCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
-	err := redis.flushAll(tx)
+	err := redis.keys.FlushAll(tx)
 	if err == nil {
 		return newPgRedisString("OK")
 	} else {

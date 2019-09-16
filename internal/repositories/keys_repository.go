@@ -82,3 +82,12 @@ func (repo *KeyRepository) Type(tx *sql.Tx, key []byte) (string, error) {
 		return "", err
 	}
 }
+
+func (repo *KeyRepository) FlushAll(tx *sql.Tx) error {
+	sqlStat := "DELETE FROM redisdata"
+	_, err := tx.Exec(sqlStat)
+	if err != nil {
+		return err
+	}
+	return nil
+}

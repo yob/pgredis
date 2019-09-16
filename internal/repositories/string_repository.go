@@ -185,12 +185,3 @@ func (repo *StringRepository) IncrDecimal(tx *sql.Tx, key []byte, by float64) ([
 	}
 	return finalValue, nil
 }
-
-func (repo *StringRepository) FlushAll(tx *sql.Tx) error {
-	sqlStat := "DELETE FROM redisdata"
-	_, err := tx.Exec(sqlStat)
-	if err != nil {
-		return err
-	}
-	return nil
-}

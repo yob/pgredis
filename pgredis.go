@@ -286,14 +286,6 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 	}
 }
 
-func (redis *PgRedis) flushAll(tx *sql.Tx) error {
-	err := redis.strings.FlushAll(tx)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func printDbStats(db *sql.DB) {
 	stats := db.Stats()
 	log.Printf("Database connection open with %d max connections", stats.MaxOpenConnections)

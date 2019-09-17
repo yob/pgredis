@@ -159,6 +159,65 @@ RSpec.shared_examples "lists" do
     end
   end
 
+  context "lrem" do
+    context "when the list doesn't exist" do
+      context "removing a single item" do
+        it "returns 0 - we removed no items from an imaginary list" do
+          expect(
+            redis.lrem("foo", 1, "bar")
+          ).to eql(0)
+        end
+      end
+    end
+    context "when the list exists with a two identical item" do
+      before do
+        redis.lpush("foo", ["bar", "bar"])
+      end
+
+      context "removing a single item" do
+        it "returns the number of removed items" do
+          expect(
+            redis.lrem("foo", 1, "bar")
+          ).to eql(1)
+        end
+        it "removes the item from the list" do
+          redis.lrem("foo", 1, "bar")
+          expect(
+            redis.lrange("foo", 0, -1)
+          ).to eql(["bar"])
+        end
+      end
+
+      context "removing both items" do
+        it "returns the number of removed items" do
+          expect(
+            redis.lrem("foo", 2, "bar")
+          ).to eql(2)
+        end
+        it "removes the item from the list" do
+          redis.lrem("foo", 2, "bar")
+          expect(
+            redis.lrange("foo", 0, -1)
+          ).to eql([])
+        end
+      end
+
+      context "removing an item that isn't in the list" do
+        it "returns the number of removed items" do
+          expect(
+            redis.lrem("foo", 1, "aaa")
+          ).to eql(0)
+        end
+        it "removes no items from the list" do
+          redis.lrem("foo", 1, "aaa")
+          expect(
+            redis.lrange("foo", 0, -1)
+          ).to eql(["bar","bar"])
+        end
+      end
+    end
+  end
+
   context "rpush" do
     context "when the list doesn't exist" do
       context "pushing a single item" do
@@ -175,7 +234,7 @@ RSpec.shared_examples "lists" do
       end
 
       context "pushing a single item" do
-        it "returns the new size" do
+        it "RETURns the new size" do
           expect(
             redis.rpush("foo", "baz")
           ).to eql(2)

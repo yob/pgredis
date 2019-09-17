@@ -97,6 +97,47 @@ func (repo *ListRepository) Lrange(tx *sql.Tx, key []byte, start int, end int) (
 	return result, nil
 }
 
+func (repo *ListRepository) LeftRemove(tx *sql.Tx, key []byte, count int, value []byte) (int64, error) {
+	var removedCount int64
+	var maxIdx sql.NullInt64
+
+	// delete any expired rows in the db with this key
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	_, err := tx.Exec(sqlStat, key)
+	if err != nil {
+		return 0, err
+	}
+
+	// now lock that key so no one else can change it
+	sqlStat = "SELECT key FROM redisdata WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL) FOR UPDATE"
+	_, err = tx.Exec(sqlStat, key)
+
+	if err != nil {
+		return 0, err
+	}
+
+	// determine the maximum index that has a matching value
+	sqlStat = "SELECT max(idx) FROM (SELECT idx FROM redisdata INNER JOIN redislists ON redisdata.key = redislists.key WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL) AND redislists.value = $2 ORDER BY idx limit $3) t"
+	err = tx.QueryRow(sqlStat, key, value, count).Scan(&maxIdx)
+
+	if err != nil {
+		return 0, err
+	}
+	if !maxIdx.Valid {
+		return 0, nil
+	}
+
+	// delete the list items
+	sqlStat = "DELETE FROM redislists WHERE key=$1 AND idx <= $2 AND value = $3"
+	res, err := tx.Exec(sqlStat, key, maxIdx, value)
+	if err != nil {
+		return 0, err
+	}
+	removedCount, _ = res.RowsAffected()
+
+	return removedCount, nil
+}
+
 func (repo *ListRepository) RightPush(tx *sql.Tx, key []byte, values [][]byte) (int, error) {
 	return repo.push(tx, key, "right", values)
 }

@@ -50,6 +50,20 @@ func (cmd *lrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 	}
 }
 
+type lremCommand struct{}
+
+func (cmd *lremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
+	key := command.Get(1)
+	count, _ := strconv.Atoi(string(command.Get(2)))
+	value := command.Get(3)
+	removed_count, err := redis.lists.LeftRemove(tx, key, count, value)
+	if err != nil {
+		log.Println("ERROR: ", err.Error())
+		return newPgRedisError(err.Error())
+	}
+	return newPgRedisInt(removed_count)
+}
+
 type rpushCommand struct{}
 
 func (cmd *rpushCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {

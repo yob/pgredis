@@ -138,6 +138,66 @@ func (repo *ListRepository) LeftRemove(tx *sql.Tx, key []byte, count int, value 
 	return removedCount, nil
 }
 
+func (repo *ListRepository) RightPop(tx *sql.Tx, key []byte) (bool, []byte, error) {
+	var value []byte
+
+	// delete any expired rows in the db with this key
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	_, err := tx.Exec(sqlStat, key)
+	if err != nil {
+		return false, value, err
+	}
+
+	// now lock that key so no one else can change it
+	sqlStat = "SELECT key FROM redisdata WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL) FOR UPDATE"
+	_, err = tx.Exec(sqlStat, key)
+
+	if err != nil {
+		return false, value, err
+	}
+
+	// delete the list items
+	sqlStat = `
+		WITH sublist AS (
+			SELECT redislists.key, redislists.idx, redislists.value
+			FROM redisdata INNER JOIN redislists ON redisdata.key = redislists.key
+			WHERE redisdata.key = $1 AND
+				(redisdata.expires_at > now() OR expires_at IS NULL)
+			ORDER BY redislists.idx desc
+			LIMIT 1
+		)
+		DELETE
+		FROM redislists
+		WHERE key IN (SELECT key FROM sublist) AND idx IN (SELECT idx FROM sublist) AND value IN (SELECT value FROM sublist)
+		RETURNING value
+	`
+	err = tx.QueryRow(sqlStat, key).Scan(&value)
+	if err == sql.ErrNoRows {
+		return false, value, nil
+	} else if err != nil {
+		return false, value, err
+	}
+
+	// if the list is now empty, delete it
+	var remainingItems int64
+	sqlStat = "SELECT count(*) FROM redisdata INNER JOIN redislists ON redisdata.key = redislists.key WHERE redisdata.key = $1"
+	err = tx.QueryRow(sqlStat, key).Scan(&remainingItems)
+
+	if err != nil {
+		return false, value, err
+	}
+
+	if remainingItems == 0 {
+		sqlStat = "DELETE FROM redisdata WHERE key=$1"
+		_, err := tx.Exec(sqlStat, key)
+		if err != nil {
+			return false, value, err
+		}
+	}
+
+	return true, value, nil
+}
+
 func (repo *ListRepository) RightPush(tx *sql.Tx, key []byte, values [][]byte) (int, error) {
 	return repo.push(tx, key, "right", values)
 }

@@ -64,6 +64,22 @@ func (cmd *lremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	return newPgRedisInt(removed_count)
 }
 
+type rpopCommand struct{}
+
+func (cmd *rpopCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
+	key := command.Get(1)
+	success, value, err := redis.lists.RightPop(tx, key)
+	if err != nil {
+		log.Println("ERROR: ", err.Error())
+		return newPgRedisError(err.Error())
+	}
+	if success {
+		return newPgRedisString(string(value))
+	} else {
+		return newPgRedisNil()
+	}
+}
+
 type rpushCommand struct{}
 
 func (cmd *rpushCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {

@@ -37,10 +37,15 @@ func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 		}
 	}
 
-	log.Printf("xxArgProvided: %v", xxArgProvided)
-	log.Printf("nxArgProvided: %v", nxArgProvided)
-	log.Printf("incrArgProvided: %v", incrArgProvided)
-	log.Printf("values: %v", values)
+	if xxArgProvided {
+		return newPgRedisError("XX arg provided, but not yet supported")
+	}
+	if nxArgProvided {
+		return newPgRedisError("NX arg provided, but not yet supported")
+	}
+	if incrArgProvided {
+		return newPgRedisError("INCR arg provided, but not yet supported")
+	}
 
 	updated, err := redis.sortedsets.Add(tx, key, values, chArgProvided)
 	if err != nil {

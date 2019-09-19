@@ -55,12 +55,15 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 			"APPEND":           &appendCommand{},
 			"BITCOUNT":         &bitcountCommand{},
 			"BRPOP":            &brpopCommand{},
+			"CLIENT":           &clientCommand{},
 			"DECR":             &decrCommand{},
 			"DEL":              &delCommand{},
 			"DECRBY":           &decrbyCommand{},
 			"ECHO":             &echoCommand{},
 			"EXISTS":           &existsCommand{},
 			"EXPIRE":           &expireCommand{},
+			"FLUSHALL":         &flushallCommand{},
+			"FLUSHDB":          &flushallCommand{},
 			"GET":              &getCommand{},
 			"GETBIT":           &getbitCommand{},
 			"GETRANGE":         &getrangeCommand{},
@@ -90,6 +93,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 			"SADD":             &saddCommand{},
 			"SCARD":            &scardCommand{},
 			"SSCAN":            &sscanCommand{},
+			"SELECT":           &selectCommand{},
 			"SET":              &setCommand{},
 			"SETEX":            &setexCommand{},
 			"SETNX":            &setnxCommand{},
@@ -98,7 +102,6 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 			"STRLEN":           &strlenCommand{},
 			"TTL":              &ttlCommand{},
 			"TYPE":             &typeCommand{},
-			"FLUSHALL":         &flushallCommand{},
 			"ZADD":             &zaddCommand{},
 			"ZCARD":            &zcardCommand{},
 			"ZRANGE":           &zrangeCommand{},
@@ -217,6 +220,10 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 			if txerr != nil {
 				ew = writer.WriteError(txerr.Error())
 			}
+			_, err = tx.Exec("SET statement_timeout = 5000")
+			if err != nil {
+				log.Printf("Error setting statement timeout")
+			}
 			log.Printf("opened MULTi transaction, sending OK\n")
 			writer.WriteSimpleString("OK")
 			writer.Flush()
@@ -228,6 +235,10 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 			tx, txerr := redis.db.Begin()
 			if txerr != nil {
 				ew = writer.WriteError(txerr.Error())
+			}
+			_, err = tx.Exec("SET statement_timeout = 5000")
+			if err != nil {
+				log.Printf("Error setting statement timeout")
 			}
 
 			result, err := cmd.Execute(command, redis, tx)

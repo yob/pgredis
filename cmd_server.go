@@ -17,6 +17,12 @@ func (cmd *flushallCommand) Execute(command *redisproto.Command, redis *PgRedis,
 	}
 }
 
+type clientCommand struct{}
+
+func (cmd *clientCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+	return newPgRedisString("1"), nil
+}
+
 type infoCommand struct{}
 
 func (cmd *infoCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {

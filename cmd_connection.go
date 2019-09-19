@@ -28,3 +28,9 @@ type quitCommand struct{}
 func (cmd *quitCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	return newPgRedisString("OK"), nil
 }
+
+type selectCommand struct{}
+
+func (cmd *selectCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+	return newPgRedisString("OK"), nil
+}

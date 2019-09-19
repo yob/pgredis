@@ -1,0 +1,7 @@
+#!/bin/bash -eu
+#
+# Boot an environment that can run "real" redis. Occasionally helpful for testing
+
+cd $(dirname $0)/..
+
+docker-compose run --rm --service-ports testredis "${@-sh}"

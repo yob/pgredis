@@ -60,7 +60,7 @@ services:
   testredis:
     image: redis:5.0.5
     ports:
-      - "6379"
+      - "6379:6379"
 
   specs:
     image: ruby:2.6.3

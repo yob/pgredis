@@ -198,6 +198,11 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 	var txerr error
 	var multiResponses = []pgRedisValue{}
 	mode := "single"
+	defer func() {
+		if tx != nil {
+			tx.Rollback()
+		}
+	}()
 	for {
 		command, err := parser.ReadCommand()
 		if err != nil {
@@ -243,6 +248,7 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 
 			result, err := cmd.Execute(command, redis, tx)
 			if err != nil {
+				tx.Rollback()
 				log.Print("ERROR: %s", err.Error())
 				newPgRedisError(err.Error()).writeTo(buffer)
 				break
@@ -266,6 +272,7 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 				cmd := redis.selectCmd(cmdString)
 				result, err := cmd.Execute(command, redis, tx)
 				if err != nil {
+					tx.Rollback()
 					log.Print("ERROR: %s", err.Error())
 					newPgRedisError(err.Error()).writeTo(buffer)
 					break

@@ -238,6 +238,7 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 			writer.Flush()
 		}
 		if mode == "single" {
+			log.Printf("single command execution: %s\n", cmdString)
 			cmd := redis.selectCmd(cmdString)
 
 			// start a db transaction
@@ -289,6 +290,7 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 				writer.WriteSimpleString("QUEUED")
 				writer.Flush()
 			}
+			log.Printf(" done %s\n", cmdString)
 		}
 
 		if cmdString == "DISCARD" {

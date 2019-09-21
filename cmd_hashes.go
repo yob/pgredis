@@ -8,23 +8,23 @@ import (
 
 type hgetCommand struct{}
 
-func (cmd *hgetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
+func (cmd *hgetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	field := command.Get(2)
 	success, value, err := redis.hashes.Get(tx, key, field)
 	if success {
-		return newPgRedisString(string(value))
+		return newPgRedisString(string(value)), nil
 	} else if !success && err == nil {
-		return newPgRedisNil()
+		return newPgRedisNil(), nil
 	} else {
 		log.Println("ERROR: ", err.Error())
-		return newPgRedisError(err.Error())
+		return nil, err
 	}
 }
 
 type hmgetCommand struct{}
 
-func (cmd *hmgetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
+func (cmd *hmgetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	values := make([]pgRedisValue, command.ArgCount()-2)
 	for i := 2; i < command.ArgCount(); i++ {
@@ -36,25 +36,24 @@ func (cmd *hmgetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 			values[i-2] = newPgRedisNil()
 		}
 	}
-	return newPgRedisArray(values)
+	return newPgRedisArray(values), nil
 }
 
 type hgetallCommand struct{}
 
-func (cmd *hgetallCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
+func (cmd *hgetallCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	fields_and_values, err := redis.hashes.GetAll(tx, key)
 	if err != nil {
-		log.Println("ERROR: ", err.Error())
-		return newPgRedisError(err.Error())
+		return nil, err
 	} else {
-		return newPgRedisArrayOfStrings(fields_and_values)
+		return newPgRedisArrayOfStrings(fields_and_values), nil
 	}
 }
 
 type hmsetCommand struct{}
 
-func (cmd *hmsetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
+func (cmd *hmsetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := string(command.Get(1))
 	items := make(map[string]string)
 
@@ -64,24 +63,22 @@ func (cmd *hmsetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 	log.Printf("items: %v\n", items)
 	err := redis.hashes.SetMultiple(tx, key, items)
 	if err == nil {
-		return newPgRedisString("OK")
+		return newPgRedisString("OK"), nil
 	} else {
-		log.Println("ERROR: ", err.Error())
-		return newPgRedisError(err.Error())
+		return nil, err
 	}
 }
 
 type hsetCommand struct{}
 
-func (cmd *hsetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
+func (cmd *hsetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	field := command.Get(2)
 	value := command.Get(3)
 	inserted, err := redis.hashes.Set(tx, key, field, value)
 	if err != nil {
-		log.Println("ERROR: ", err.Error())
-		return newPgRedisError(err.Error())
+		return nil, err
 	} else {
-		return newPgRedisInt(inserted)
+		return newPgRedisInt(inserted), nil
 	}
 }

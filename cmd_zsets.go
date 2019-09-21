@@ -2,7 +2,7 @@ package pgredis
 
 import (
 	"database/sql"
-	"log"
+	"errors"
 	"strconv"
 
 	"github.com/secmask/go-redisproto"
@@ -10,7 +10,7 @@ import (
 
 type zaddCommand struct{}
 
-func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
+func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	xxArgProvided := false
 	nxArgProvided := false
 	chArgProvided := false
@@ -38,41 +38,39 @@ func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	}
 
 	if xxArgProvided {
-		return newPgRedisError("XX arg provided, but not yet supported")
+		return nil, errors.New("XX arg provided, but not yet supported")
 	}
 	if nxArgProvided {
-		return newPgRedisError("NX arg provided, but not yet supported")
+		return nil, errors.New("NX arg provided, but not yet supported")
 	}
 	if incrArgProvided {
-		return newPgRedisError("INCR arg provided, but not yet supported")
+		return nil, errors.New("INCR arg provided, but not yet supported")
 	}
 
 	updated, err := redis.sortedsets.Add(tx, key, values, chArgProvided)
 	if err != nil {
-		log.Println("ERROR: ", err.Error())
-		return newPgRedisError(err.Error())
+		return nil, err
 	} else {
-		return newPgRedisInt(updated)
+		return newPgRedisInt(updated), nil
 	}
 }
 
 type zcardCommand struct{}
 
-func (cmd *zcardCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
+func (cmd *zcardCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 
 	count, err := redis.sortedsets.Cardinality(tx, key)
 	if err != nil {
-		log.Println("ERROR: ", err.Error())
-		return newPgRedisError(err.Error())
+		return nil, err
 	} else {
-		return newPgRedisInt(count)
+		return newPgRedisInt(count), nil
 	}
 }
 
 type zrangeCommand struct{}
 
-func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
+func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	start, _ := strconv.Atoi(string(command.Get(2)))
 	end, _ := strconv.Atoi(string(command.Get(3)))
@@ -80,16 +78,15 @@ func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 
 	items, err := redis.sortedsets.Range(tx, key, start, end, includeScores)
 	if err == nil {
-		return newPgRedisArrayOfStrings(items)
+		return newPgRedisArrayOfStrings(items), nil
 	} else {
-		log.Println("ERROR: ", err.Error())
-		return newPgRedisError(err.Error())
+		return nil, err
 	}
 }
 
 type zremCommand struct{}
 
-func (cmd *zremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
+func (cmd *zremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	values := make([][]byte, 0)
 	for i := 2; i < command.ArgCount(); i++ {
@@ -99,9 +96,8 @@ func (cmd *zremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	updated, err := redis.sortedsets.Remove(tx, key, values)
 
 	if err != nil {
-		log.Println("ERROR: ", err.Error())
-		return newPgRedisError(err.Error())
+		return nil, err
 	} else {
-		return newPgRedisInt(updated)
+		return newPgRedisInt(updated), nil
 	}
 }

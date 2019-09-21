@@ -221,7 +221,12 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 				ew = writer.WriteError(txerr.Error())
 			}
 
-			result := cmd.Execute(command, redis, tx)
+			result, err := cmd.Execute(command, redis, tx)
+			if err != nil {
+				log.Print("ERROR: %s", err.Error())
+				newPgRedisError(err.Error()).writeTo(buffer)
+				break
+			}
 			ew = result.writeTo(buffer)
 			if ew != nil {
 				// this should be rare, there's no much that can go wrong when writing to an in memory buffer
@@ -239,7 +244,12 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 			log.Printf("MULTI command execution: %s\n", cmdString)
 			if cmdString != "MULTI" && cmdString != "EXEC" && cmdString != "DISCARD" {
 				cmd := redis.selectCmd(cmdString)
-				result := cmd.Execute(command, redis, tx)
+				result, err := cmd.Execute(command, redis, tx)
+				if err != nil {
+					log.Print("ERROR: %s", err.Error())
+					newPgRedisError(err.Error()).writeTo(buffer)
+					break
+				}
 				multiResponses = append(multiResponses, result)
 				writer.WriteSimpleString("QUEUED")
 				writer.Flush()

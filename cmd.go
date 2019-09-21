@@ -1,6 +1,7 @@
 package pgredis
 
 import (
+	"errors"
 	"fmt"
 
 	"database/sql"
@@ -8,11 +9,11 @@ import (
 )
 
 type redisCommand interface {
-	Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue
+	Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error)
 }
 
 type unrecognisedCommand struct{}
 
-func (cmd *unrecognisedCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) pgRedisValue {
-	return newPgRedisError(fmt.Sprintf("Command %s not recognised", command.Get(0)))
+func (cmd *unrecognisedCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+	return nil, errors.New(fmt.Sprintf("Command %s not recognised", command.Get(0)))
 }

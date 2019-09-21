@@ -1,6 +1,45 @@
 # coding: utf-8
 
 RSpec.shared_examples "lists" do
+  context "brpop" do
+    context "when the list doesn't exist" do
+      context "removing the last item" do
+        it "returns nil" do
+          expect(
+            redis.brpop("foo", timeout: 1)
+          ).to eql(nil)
+        end
+      end
+    end
+    context "when the list exists with a two item" do
+      before do
+        redis.rpush("foo", ["aaa", "bbb"])
+      end
+
+      context "removing a single item" do
+        it "returns the final items and removes the item from the list" do
+          expect(
+            redis.brpop("foo", timeout: 1)
+          ).to eql(["foo", "bbb"])
+          expect(
+            redis.lrange("foo", 0, -1)
+          ).to eql(["aaa"])
+        end
+      end
+
+    end
+
+    context "when two lists don't exist" do
+      context "removing the last item" do
+        it "returns nil" # do
+        #  expect(
+        #    redis.brpop(["foo", "pop"], timeout: 1)
+        #  ).to eql(nil)
+        #end
+      end
+    end
+  end
+
   context "llen" do
     context "when the list doesn't exist" do
       it "returns 0" do

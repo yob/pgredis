@@ -87,6 +87,22 @@ func (empty *pgRedisNil) raw() interface{} {
 	return nil
 }
 
+type pgRedisNilArray struct{}
+
+// TODO should this return a pgRedisError or pgRedisValue?
+func newPgRedisNilArray() pgRedisValue {
+	return &pgRedisNilArray{}
+}
+
+func (empty *pgRedisNilArray) writeTo(target io.Writer) error {
+	protocolWriter := redisproto.NewWriter(target)
+	return protocolWriter.WriteObjectsSlice(nil)
+}
+
+func (empty *pgRedisNilArray) raw() interface{} {
+	return nil
+}
+
 type pgRedisArray struct {
 	values []pgRedisValue
 }

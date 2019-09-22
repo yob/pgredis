@@ -2,7 +2,6 @@ package pgredis
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"github.com/secmask/go-redisproto"
 	"strconv"
@@ -14,29 +13,31 @@ type brpopCommand struct{}
 // TODO this sleeping approach might work, but it's lame. It'd be neat to use psql NOTIFY
 // to be informed when a list is ready to rpop
 func (cmd *brpopCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
-	if command.ArgCount() > 3 {
-		return nil, errors.New("BRPOP with multiple lists not supported yet")
+	listCount := command.ArgCount() - 2
+	listKeys := []string{}
+	for i := 1; i <= listCount; i++ {
+		listKeys = append(listKeys, string(command.Get(i)))
 	}
-
-	key := command.Get(1)
+	fmt.Printf("%d %v\n", listCount, listKeys)
 	startTime := time.Now()
 	timeout := fmt.Sprintf("%ss", string(command.Get(2)))
 	maxDuration, _ := time.ParseDuration(timeout)
 	for {
-		success, value, err := redis.lists.RightPop(tx, key)
-		if err != nil {
-			return nil, err
-		}
-		if success {
-			items := []string{string(key), string(value)}
-			return newPgRedisArrayOfStrings(items), nil
-		}
-		if time.Since(startTime) > maxDuration {
-			return newPgRedisNilArray(), nil
+		for _, key := range listKeys {
+			success, value, err := redis.lists.RightPop(tx, []byte(key))
+			if err != nil {
+				return nil, err
+			}
+			if success {
+				items := []string{string(key), string(value)}
+				return newPgRedisArrayOfStrings(items), nil
+			}
+			if time.Since(startTime) > maxDuration {
+				return newPgRedisNilArray(), nil
+			}
 		}
 		time.Sleep(1 * time.Second)
 	}
-	return newPgRedisNil(), nil
 }
 
 type llenCommand struct{}

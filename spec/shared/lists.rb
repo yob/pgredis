@@ -2,7 +2,7 @@
 
 RSpec.shared_examples "lists" do
   context "brpop" do
-    context "when the list doesn't exist" do
+    context "when no lists exist" do
       context "removing the last item" do
         it "returns nil" do
           expect(
@@ -10,8 +10,15 @@ RSpec.shared_examples "lists" do
           ).to eql(nil)
         end
       end
+      context "removing the last item from two lists" do
+        it "returns nil" do
+          expect(
+            redis.brpop(["foo", "pop"], timeout: 1)
+          ).to eql(nil)
+        end
+      end
     end
-    context "when the list exists with a two item" do
+    context "when a list exists with a two item" do
       before do
         redis.rpush("foo", ["aaa", "bbb"])
       end
@@ -26,16 +33,26 @@ RSpec.shared_examples "lists" do
           ).to eql(["aaa"])
         end
       end
-
     end
 
-    context "when two lists don't exist" do
-      context "removing the last item" do
-        it "returns nil" # do
-        #  expect(
-        #    redis.brpop(["foo", "pop"], timeout: 1)
-        #  ).to eql(nil)
-        #end
+    context "when a list exists with an item each" do
+      before do
+        redis.rpush("foo", "aaa")
+        redis.rpush("bar", "bbb")
+      end
+
+      context "removing a single item from both lists" do
+        it "returns the corcect item and removes it from the list" do
+          expect(
+            redis.brpop(["foo","bar"], timeout: 1)
+          ).to eql(["foo", "aaa"])
+          expect(
+            redis.lrange("foo", 0, -1)
+          ).to eql([])
+          expect(
+            redis.lrange("bar", 0, -1)
+          ).to eql(["bbb"])
+        end
       end
     end
   end

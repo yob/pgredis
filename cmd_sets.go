@@ -65,3 +65,16 @@ func (cmd *smembersCommand) Execute(command *redisproto.Command, redis *PgRedis,
 		return newPgRedisArrayOfStrings(values), nil
 	}
 }
+
+type sscanCommand struct{}
+
+func (cmd *sscanCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+	key := command.Get(1)
+
+	values, err := redis.sets.Members(tx, key)
+	if err != nil {
+		return nil, err
+	} else {
+		return newPgRedisScanResponse("0", values), nil
+	}
+}

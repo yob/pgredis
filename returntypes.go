@@ -141,3 +141,34 @@ func (arr pgRedisArray) writeTo(target io.Writer) error {
 func (arr pgRedisArray) raw() interface{} {
 	return arr.values
 }
+
+type pgRedisScanReponse struct {
+	cursor string
+	values []string
+}
+
+func newPgRedisScanResponse(cursor string, values []string) pgRedisValue {
+	return pgRedisScanReponse{
+		cursor: cursor,
+		values: values,
+	}
+}
+
+func (resp pgRedisScanReponse) writeTo(target io.Writer) error {
+	star := []byte{'*'}
+	newLine := []byte{'\r', '\n'}
+	protocolWriter := redisproto.NewWriter(target)
+	protocolWriter.Write(star)        // start an array
+	protocolWriter.Write([]byte("2")) // the array has 2 elements
+	protocolWriter.Write(newLine)
+
+	// first element is the cursor
+	protocolWriter.WriteBulkString(resp.cursor)
+
+	// second element is a nested array
+	return protocolWriter.WriteBulkStrings(resp.values)
+}
+
+func (resp pgRedisScanReponse) raw() interface{} {
+	return resp.values
+}

@@ -134,4 +134,34 @@ RSpec.shared_examples "sets" do
       end
     end
   end
+
+  context "sscan" do
+    context "when the set doesn't exist" do
+      it "returns a cursor of 0 and an empty array" do
+        expect(
+          redis.sscan("foo", 0)
+        ).to eql(["0", []])
+      end
+    end
+    context "when the set has 3 items" do
+      before do
+        redis.sadd("foo",["a","b","c"])
+      end
+      it "returns a cursor of 0 and the set members in array" do
+        result = redis.sscan("foo", 0)
+        expect(result.size).to eql(2)
+        expect(result.first).to eql("0")
+        expect(result.last).to match_array(["a","b","c"])
+      end
+    end
+    context "when the set has 100 items" do
+      it "returns a non-zero cursor and some the set members"
+      context "when the count option is included" do
+        it "returns a non-zero cursor and some the set members"
+      end
+      context "when the match option is included" do
+        it "returns a non-zero cursor and some the set members"
+      end
+    end
+  end
 end

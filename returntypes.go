@@ -110,7 +110,7 @@ func (arr pgRedisArray) writeTo(target io.Writer) error {
 	newLine := []byte{'\r', '\n'}
 	arraySizeAsString := strconv.FormatInt(int64(len(arr.values)), 10)
 	protocolWriter := redisproto.NewWriter(target)
-	protocolWriter.Write(star)        // start an array
+	protocolWriter.Write(star)                      // start an array
 	protocolWriter.Write([]byte(arraySizeAsString)) // the number of items in array
 	protocolWriter.Write(newLine)
 

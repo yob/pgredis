@@ -75,6 +75,9 @@ func (cmd *sscanCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 	if err != nil {
 		return nil, err
 	} else {
-		return newPgRedisScanResponse("0", values), nil
+		response := make([]pgRedisValue, 0)
+		response = append(response, newPgRedisString("0"))
+		response = append(response, newPgRedisArrayOfStrings(values))
+		return newPgRedisArray(response), nil
 	}
 }

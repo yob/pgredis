@@ -125,7 +125,6 @@ func (repo *SortedSetRepository) Range(tx *sql.Tx, key []byte, start int, end in
 		ORDER BY row
 	`
 	sqlStat = fmt.Sprintf(sqlStat, direction, direction)
-	fmt.Println(sqlStat)
 	rows, err := tx.Query(sqlStat, key, start, end)
 	if err != nil {
 		return result, err

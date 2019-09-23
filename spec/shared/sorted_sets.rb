@@ -561,5 +561,25 @@ RSpec.shared_examples "sorted sets" do
         end
       end
     end
+    context "when the set has 3 items with float values" do
+      before do
+        redis.zadd("foo","1.2","b")
+        redis.zadd("foo","1.1","a")
+        redis.zadd("foo","1.3","c")
+      end
+      context "removing two of them with inclusive syntax" do
+        it "returns 2 and removes the items from the set" do
+          expect(
+            redis.zremrangebyscore("foo", "1.1", "1.2")
+          ).to eql(2)
+
+          expect(
+            redis.zrange("foo",0,2, with_scores: true)
+          ).to eql([
+            ["c", 1.3]
+          ])
+        end
+      end
+    end
   end
 end

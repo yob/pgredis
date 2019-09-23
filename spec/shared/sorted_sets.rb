@@ -266,6 +266,20 @@ RSpec.shared_examples "sorted sets" do
         end
       end
     end
+    context "when the list has 3 items with the same score" do
+      before do
+        redis.zadd("foo", 1, "b")
+        redis.zadd("foo", 1, "a")
+        redis.zadd("foo", 1, "c")
+      end
+      context "reading full set" do
+        it "returns an array with all items sorted lexigraphically" do
+          expect(
+            redis.zrange("foo", 0, 2)
+          ).to eql(["a","b","c"])
+        end
+      end
+    end
   end
   context "zrevrange" do
     context "when the zset doesn't exist" do
@@ -367,6 +381,20 @@ RSpec.shared_examples "sorted sets" do
               ["a",1.0],
             ])
           end
+        end
+      end
+    end
+    context "when the list has 3 items with the same score" do
+      before do
+        redis.zadd("foo", 1, "b")
+        redis.zadd("foo", 1, "a")
+        redis.zadd("foo", 1, "c")
+      end
+      context "reading full set" do
+        it "returns an array with all items sorted reverse lexigraphically" do
+          expect(
+            redis.zrevrange("foo", 0, 2)
+          ).to eql(["c","b","a"])
         end
       end
     end

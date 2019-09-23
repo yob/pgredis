@@ -114,7 +114,7 @@ func (repo *SortedSetRepository) Range(tx *sql.Tx, key []byte, start int, end in
 	sqlStat = `
 		WITH subset AS (
 			SELECT rediszsets.value, score,
-			ROW_NUMBER () OVER (ORDER BY score %s,rediszsets.value)-1 as row
+			ROW_NUMBER () OVER (ORDER BY score %s,rediszsets.value %s)-1 as row
 			FROM redisdata INNER JOIN rediszsets ON redisdata.key = rediszsets.key
 			WHERE redisdata.key = $1 AND
 				(redisdata.expires_at > now() OR expires_at IS NULL)
@@ -124,7 +124,7 @@ func (repo *SortedSetRepository) Range(tx *sql.Tx, key []byte, start int, end in
 		WHERE (row BETWEEN $2 AND $3)
 		ORDER BY row
 	`
-	sqlStat = fmt.Sprintf(sqlStat, direction)
+	sqlStat = fmt.Sprintf(sqlStat, direction, direction)
 	fmt.Println(sqlStat)
 	rows, err := tx.Query(sqlStat, key, start, end)
 	if err != nil {

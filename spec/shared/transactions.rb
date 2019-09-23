@@ -22,6 +22,19 @@ RSpec.shared_examples "transactions" do
         expect(result).to eql([2,3])
       end
     end
+    context "when the key exists as a list" do
+      before do
+        redis.rpush("foo", "aaa")
+      end
+      context "when a command within the transaction returns an array" do
+        it "returns the results in a nested array" do
+          result = redis.multi do
+            redis.lrange("foo", 0, 1)
+          end
+          expect(result).to eql([["aaa"]])
+        end
+      end
+    end
   end
 
   context "multi with discard" do

@@ -85,6 +85,47 @@ func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 	}
 }
 
+type zrangebyscoreCommand struct{}
+
+func (cmd *zrangebyscoreCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+	var min float64
+	var max float64
+	var minExclusive bool
+	var maxExclusive bool
+	var offset, count int
+
+	key := command.Get(1)
+	minString := string(command.Get(2))
+	maxString := string(command.Get(3))
+	includeScores := commandHasValue(command, "WITHSCORES")
+
+	if strings.HasPrefix(minString, "(") {
+		minExclusive = true
+		min, _ = strconv.ParseFloat(minString[1:len(minString)], 64)
+	} else {
+		minExclusive = false
+		min, _ = strconv.ParseFloat(minString, 64)
+	}
+
+	if strings.HasPrefix(maxString, "(") {
+		maxExclusive = true
+		max, _ = strconv.ParseFloat(maxString[1:len(maxString)], 64)
+	} else {
+		maxExclusive = false
+		max, _ = strconv.ParseFloat(maxString, 64)
+	}
+
+	if commandHasValue(command, "LIMIT") {
+		offset, count = commandLimitOffsetAndCount(command)
+	}
+	items, err := redis.sortedsets.RangeByScore(tx, key, min, minExclusive, max, maxExclusive, offset, count, includeScores)
+	if err != nil {
+		return nil, err
+	}
+
+	return newPgRedisArrayOfStrings(items), nil
+}
+
 type zremCommand struct{}
 
 func (cmd *zremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -167,5 +208,19 @@ func (cmd *zrevrangeCommand) Execute(command *redisproto.Command, redis *PgRedis
 		return newPgRedisArrayOfStrings(items), nil
 	} else {
 		return nil, err
+	}
+}
+
+func commandLimitOffsetAndCount(command *redisproto.Command) (int, int) {
+	indexOfLimit := indexOfValue(command, "LIMIT")
+	if indexOfLimit == 0 {
+		return 0, 0
+	} else {
+		offset, offsetErr := strconv.Atoi(string(command.Get(indexOfLimit + 1)))
+		count, countErr := strconv.Atoi(string(command.Get(indexOfLimit + 2)))
+		if offsetErr != nil || countErr != nil {
+			return 0, 0
+		}
+		return offset, count
 	}
 }

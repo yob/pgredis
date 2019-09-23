@@ -152,6 +152,75 @@ func (repo *SortedSetRepository) Range(tx *sql.Tx, key []byte, start int, end in
 	return result, nil
 }
 
+func (repo *SortedSetRepository) RangeByScore(tx *sql.Tx, key []byte, min float64, minExclusive bool, max float64, maxExclusive bool, offset int, count int, withScores bool) ([]string, error) {
+	var result []string
+	var minOperator string
+	var maxOperator string
+	var rows *sql.Rows
+	var err error
+	var sqlLimit string
+
+	if minExclusive {
+		minOperator = ">"
+	} else {
+		minOperator = ">="
+	}
+
+	if maxExclusive {
+		maxOperator = "<"
+	} else {
+		maxOperator = "<="
+	}
+
+	if offset > 0 || count > 0 {
+		sqlLimit = fmt.Sprintf(" LIMIT %d OFFSET %d", count, offset)
+	} else if count < 0 {
+		sqlLimit = fmt.Sprintf(" OFFSET %d", offset)
+	} else {
+		sqlLimit = ""
+	}
+
+	// The start and end values we have assume a zero-indexed set, but in the database we don't store an index
+	// This uses a CTE to select the set values and assign an in-memory zero-index that we can select on
+	if math.IsInf(min, 0) && math.IsInf(max, 0) {
+		sqlStat := "SELECT rediszsets.value, score FROM redisdata INNER JOIN rediszsets ON redisdata.key = rediszsets.key WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL) ORDER BY rediszsets.score, rediszsets.value" + sqlLimit
+		rows, err = tx.Query(sqlStat, key)
+	} else if !math.IsInf(min, 0) && !math.IsInf(max, 0) {
+		sqlStat := fmt.Sprintf("SELECT rediszsets.value, score FROM redisdata INNER JOIN rediszsets ON redisdata.key = rediszsets.key WHERE redisdata.key = $1 AND score %s $2 AND score %s $3 AND (redisdata.expires_at > now() OR expires_at IS NULL) ORDER BY rediszsets.score, rediszsets.value", minOperator, maxOperator) + sqlLimit
+		rows, err = tx.Query(sqlStat, key, min, max)
+	} else if math.IsInf(min, 0) {
+		sqlStat := fmt.Sprintf("SELECT rediszsets.value, score FROM redisdata INNER JOIN rediszsets ON redisdata.key = rediszsets.key WHERE redisdata.key = $1 AND score %s $2 AND (redisdata.expires_at > now() OR expires_at IS NULL) ORDER BY rediszsets.score, rediszsets.value", maxOperator) + sqlLimit
+		rows, err = tx.Query(sqlStat, key, max)
+	} else if math.IsInf(max, 0) {
+		sqlStat := fmt.Sprintf("SELECT rediszsets.value,score FROM redisdata INNER JOIN rediszsets ON redisdata.key = rediszsets.key WHERE redisdata.key = $1 AND score %s $2 AND (redisdata.expires_at > now() OR expires_at IS NULL) ORDER BY rediszsets.score, rediszsets.value", minOperator) + sqlLimit
+		rows, err = tx.Query(sqlStat, key, min)
+	}
+
+	if err != nil {
+		return result, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var value string
+		var score string
+		err = rows.Scan(&value, &score)
+		if err != nil {
+			return result, err
+		}
+		result = append(result, value)
+		if withScores {
+			result = append(result, score)
+		}
+	}
+	err = rows.Err()
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
+}
+
 func (repo *SortedSetRepository) Remove(tx *sql.Tx, key []byte, values [][]byte) (count int64, err error) {
 	var lockedKey string
 

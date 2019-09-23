@@ -281,6 +281,86 @@ RSpec.shared_examples "sorted sets" do
       end
     end
   end
+  context "zrangebyscore" do
+    context "when the set doesn't exist" do
+      it "returns empty array" do
+        expect(
+          redis.zrangebyscore("foo", 0, 1)
+        ).to eql([])
+      end
+    end
+    context "when the set has 3 items" do
+      before do
+        redis.zadd("foo","2","b")
+        redis.zadd("foo","1","a")
+        redis.zadd("foo","3","c")
+      end
+      context "returning two of them with inclusive syntax" do
+        it "returns the items" do
+          expect(
+            redis.zrangebyscore("foo", 1, 2)
+          ).to eql(["a","b"])
+        end
+      end
+      context "returning one of them with exclusive syntax" do
+        it "returns the item" do
+          expect(
+            redis.zrangebyscore("foo", "1", "(2")
+          ).to eql(["a"])
+        end
+      end
+      context "returning one of them with negative infinite syntax" do
+        it "returns the item" do
+          expect(
+            redis.zrangebyscore("foo", "-inf", "1")
+          ).to eql(["a"])
+        end
+      end
+      context "returning one of them with positive infinite syntax" do
+        it "returns the item" do
+          expect(
+            redis.zrangebyscore("foo", "3", "+inf")
+          ).to eql(["c"])
+        end
+      end
+      context "when WITHSCORES option is used" do
+        context "reading the full set" do
+          it "returns an array that includes the scores" do
+            expect(
+              redis.zrangebyscore("foo", 1, 3, with_scores: true)
+            ).to eql([
+              ["a",1.0],
+              ["b",2.0],
+              ["c",3.0]
+            ])
+          end
+        end
+      end
+      context "when LIMIT option is used" do
+        context "reading a partial set" do
+          it "returns the correct items" do
+            expect(
+              redis.zrangebyscore("foo", "-inf", "+inf", limit: [1,2])
+            ).to eql(["b","c"])
+          end
+        end
+      end
+    end
+    context "when the set has 3 items with float values" do
+      before do
+        redis.zadd("foo","1.2","b")
+        redis.zadd("foo","1.1","a")
+        redis.zadd("foo","1.3","c")
+      end
+      context "returning two of them with inclusive syntax" do
+        it "returns the items" do
+          expect(
+            redis.zrangebyscore("foo", "1.1", "1.2")
+          ).to eql(["a","b"])
+        end
+      end
+    end
+  end
   context "zrevrange" do
     context "when the zset doesn't exist" do
       context "reading the first item" do

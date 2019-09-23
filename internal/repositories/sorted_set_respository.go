@@ -98,16 +98,6 @@ func (repo *SortedSetRepository) Range(tx *sql.Tx, key []byte, start int, end in
 	if end < 0 {
 		end = setLength + end
 	}
-
-	//end += 1
-
-	if start < 0 {
-		start = 0
-	}
-
-	if end < start {
-		end = start
-	}
 	// end normalise start/end values
 
 	// The start and end values we have assume a zero-indexed set, but in the database we don't store an index
@@ -305,16 +295,6 @@ func (repo *SortedSetRepository) RemoveRangeByRank(tx *sql.Tx, key []byte, start
 
 	if end < 0 {
 		end = setLength + end
-	}
-
-	//end += 1
-
-	if start < 0 {
-		start = 0
-	}
-
-	if end < start {
-		end = start
 	}
 	// end normalise start/end values
 

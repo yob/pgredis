@@ -236,6 +236,14 @@ RSpec.shared_examples "sorted sets" do
         end
       end
 
+      context "starting before the start of the set" do
+        it "returns an empty array" do
+          expect(
+            redis.zrange("foo", -20, -10)
+          ).to eql([])
+        end
+      end
+
       context "negative start and end" do
         it "returns an empty array" do
           expect(
@@ -434,6 +442,14 @@ RSpec.shared_examples "sorted sets" do
         end
       end
 
+      context "starting before the start of the set" do
+        it "returns an empty array" do
+          expect(
+            redis.zrevrange("foo", -20, -10)
+          ).to eql([])
+        end
+      end
+
       context "negative start and end" do
         it "returns an empty array" do
           expect(
@@ -545,6 +561,36 @@ RSpec.shared_examples "sorted sets" do
             redis.zrange("foo",0,2, with_scores: true)
           ).to eql([
             ["a", 1.0],
+            ["c", 3.0],
+          ])
+        end
+      end
+      context "removing items past the end of the set" do
+        it "returns 0 and removes nothing from the set" do
+          expect(
+            redis.zremrangebyrank("foo", 10, 20)
+          ).to eql(0)
+
+          expect(
+            redis.zrange("foo",0,2, with_scores: true)
+          ).to eql([
+            ["a", 1.0],
+            ["b", 2.0],
+            ["c", 3.0],
+          ])
+        end
+      end
+      context "removing items before the start of the set" do
+        it "returns 0 and removes nothing from the set" do
+          expect(
+            redis.zremrangebyrank("foo", -20, -10)
+          ).to eql(0)
+
+          expect(
+            redis.zrange("foo",0,2, with_scores: true)
+          ).to eql([
+            ["a", 1.0],
+            ["b", 2.0],
             ["c", 3.0],
           ])
         end

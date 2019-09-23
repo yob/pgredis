@@ -197,6 +197,14 @@ RSpec.shared_examples "lists" do
         end
       end
 
+      context "starting before the start of the list" do
+        it "returns an empty array" do
+          expect(
+            redis.lrange("foo", -20, -10)
+          ).to eql([])
+        end
+      end
+
       context "negative start and end" do
         it "returns an empty array" do
           expect(

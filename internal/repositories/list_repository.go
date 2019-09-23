@@ -48,16 +48,6 @@ func (repo *ListRepository) Lrange(tx *sql.Tx, key []byte, start int, end int) (
 	if end < 0 {
 		end = listLength + end
 	}
-
-	//end += 1
-
-	if start < 0 {
-		start = 0
-	}
-
-	if end < start {
-		end = start
-	}
 	// end normalise start/end values
 
 	// The start and end values we have assume a zero-indexed list, but in the database our index values aren't zero indexed.

@@ -260,6 +260,7 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 				tx.Rollback()
 				log.Print("ERROR: %s", err.Error())
 				newPgRedisError(err.Error()).writeTo(buffer)
+				buffer.Flush()
 				break
 			}
 			ew = result.writeTo(buffer)
@@ -284,6 +285,7 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 					tx.Rollback()
 					log.Print("ERROR: %s", err.Error())
 					newPgRedisError(err.Error()).writeTo(buffer)
+					buffer.Flush()
 					break
 				}
 				multiResponses = append(multiResponses, result)
@@ -313,10 +315,14 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 				if txerr != nil {
 					ew = writer.WriteError(txerr.Error())
 				}
+				fmt.Printf("MULTI RESPONSE: %v\n", multiResponses)
 				redisArray := newPgRedisArray(multiResponses)
 				foo := redisArray.writeTo(buffer)
 				if foo != nil {
 					log.Printf("serialisation error\n", foo)
+					newPgRedisError(foo.Error()).writeTo(buffer)
+					buffer.Flush()
+					break
 				}
 				buffer.Flush()
 				multiResponses = make([]pgRedisValue, 0)

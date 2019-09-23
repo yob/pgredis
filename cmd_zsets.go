@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/secmask/go-redisproto"
 )
@@ -110,6 +111,42 @@ func (cmd *zremrangebyrankCommand) Execute(command *redisproto.Command, redis *P
 	end, _ := strconv.Atoi(string(command.Get(3)))
 
 	removed, err := redis.sortedsets.RemoveRangeByRank(tx, key, start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	return newPgRedisInt(removed), nil
+}
+
+type zremrangebyscoreCommand struct{}
+
+func (cmd *zremrangebyscoreCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+	var min float64
+	var max float64
+	var minExclusive bool
+	var maxExclusive bool
+
+	key := command.Get(1)
+	minString := string(command.Get(2))
+	maxString := string(command.Get(3))
+
+	if strings.HasPrefix(minString, "(") {
+		minExclusive = true
+		min, _ = strconv.ParseFloat(minString[1:len(minString)], 64)
+	} else {
+		minExclusive = false
+		min, _ = strconv.ParseFloat(minString, 64)
+	}
+
+	if strings.HasPrefix(maxString, "(") {
+		maxExclusive = true
+		max, _ = strconv.ParseFloat(maxString[1:len(maxString)], 64)
+	} else {
+		maxExclusive = false
+		max, _ = strconv.ParseFloat(maxString, 64)
+	}
+
+	removed, err := redis.sortedsets.RemoveRangeByScore(tx, key, min, minExclusive, max, maxExclusive)
 	if err != nil {
 		return nil, err
 	}

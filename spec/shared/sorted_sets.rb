@@ -491,4 +491,75 @@ RSpec.shared_examples "sorted sets" do
       end
     end
   end
+  context "zremrangebyscore" do
+    context "when the set doesn't exist" do
+      it "returns 0" do
+        expect(
+          redis.zremrangebyscore("foo", 0, 1)
+        ).to eql(0)
+      end
+    end
+    context "when the set has 3 items" do
+      before do
+        redis.zadd("foo","2","b")
+        redis.zadd("foo","1","a")
+        redis.zadd("foo","3","c")
+      end
+      context "removing two of them with inclusive syntax" do
+        it "returns 2 and removes the items from the set" do
+          expect(
+            redis.zremrangebyscore("foo", 1, 2)
+          ).to eql(2)
+
+          expect(
+            redis.zrange("foo",0,2, with_scores: true)
+          ).to eql([
+            ["c", 3.0]
+          ])
+        end
+      end
+      context "removing one of them with exclusive syntax" do
+        it "returns 1 and removes the item from the set" do
+          expect(
+            redis.zremrangebyscore("foo", "1", "(2")
+          ).to eql(1)
+
+          expect(
+            redis.zrange("foo",0,2, with_scores: true)
+          ).to eql([
+            ["b", 2.0],
+            ["c", 3.0],
+          ])
+        end
+      end
+      context "removing one of them with negative infinite syntax" do
+        it "returns 1 and removes the item from the set" do
+          expect(
+            redis.zremrangebyscore("foo", "-inf", "1")
+          ).to eql(1)
+
+          expect(
+            redis.zrange("foo",0,2, with_scores: true)
+          ).to eql([
+            ["b", 2.0],
+            ["c", 3.0],
+          ])
+        end
+      end
+      context "removing one of them with positive infinite syntax" do
+        it "returns 1 and removes the item from the set" do
+          expect(
+            redis.zremrangebyscore("foo", "3", "+inf")
+          ).to eql(1)
+
+          expect(
+            redis.zrange("foo",0,2, with_scores: true)
+          ).to eql([
+            ["a", 1.0],
+            ["b", 2.0],
+          ])
+        end
+      end
+    end
+  end
 end

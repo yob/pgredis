@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 )
 
 type SortedSetRepository struct{}
@@ -264,6 +265,83 @@ func (repo *SortedSetRepository) RemoveRangeByRank(tx *sql.Tx, key []byte, start
 		)
 	`
 	res, err := tx.Exec(sqlStat, key, start, end)
+	if err != nil {
+		return 0, err
+	}
+	rowCount, _ := res.RowsAffected()
+	count += rowCount
+
+	// if the set is now empty, delete it
+	var remainingMembers int64
+	sqlStat = "SELECT count(*) FROM redisdata INNER JOIN rediszsets ON redisdata.key = rediszsets.key WHERE redisdata.key = $1"
+	err = tx.QueryRow(sqlStat, key).Scan(&remainingMembers)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if remainingMembers == 0 {
+		sqlStat = "DELETE FROM redisdata WHERE key=$1"
+		_, err := tx.Exec(sqlStat, key)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return count, nil
+}
+
+func (repo *SortedSetRepository) RemoveRangeByScore(tx *sql.Tx, key []byte, min float64, minExclusive bool, max float64, maxExclusive bool) (count int64, err error) {
+	var lockedKey string
+	var res sql.Result
+	var minOperator string
+	var maxOperator string
+
+	if minExclusive {
+		minOperator = ">"
+	} else {
+		minOperator = ">="
+	}
+
+	if maxExclusive {
+		maxOperator = "<"
+	} else {
+		maxOperator = "<="
+	}
+
+	// delete any expired rows in the db with this key
+	// we do this first so the count we return at the end doesn't include these rows
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	_, err = tx.Exec(sqlStat, key)
+	if err != nil {
+		return 0, err
+	}
+
+	// now lock that key so no one else can change it
+	sqlStat = "SELECT key FROM redisdata WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL) FOR UPDATE"
+	err = tx.QueryRow(sqlStat, key).Scan(&lockedKey)
+
+	if err == sql.ErrNoRows {
+		return 0, nil
+	} else if err != nil {
+		return 0, err
+	}
+
+	// The start and end values we have assume a zero-indexed set, but in the database we don't store an index
+	// This uses a CTE to select the set values and assign an in-memory zero-index that we can select on
+	if math.IsInf(min, 0) && math.IsInf(max, 0) {
+		sqlStat = "DELETE FROM rediszsets WHERE key = $1"
+		res, err = tx.Exec(sqlStat, key)
+	} else if !math.IsInf(min, 0) && !math.IsInf(max, 0) {
+		sqlStat = fmt.Sprintf("DELETE FROM rediszsets WHERE key = $1 AND score %s $2 AND score %s $3", minOperator, maxOperator)
+		res, err = tx.Exec(sqlStat, key, min, max)
+	} else if math.IsInf(min, 0) {
+		sqlStat = fmt.Sprintf("DELETE FROM rediszsets WHERE key = $1 AND score %s $2", maxOperator)
+		res, err = tx.Exec(sqlStat, key, max)
+	} else if math.IsInf(max, 0) {
+		sqlStat = fmt.Sprintf("DELETE FROM rediszsets WHERE key = $1 AND score %s $2", minOperator)
+		res, err = tx.Exec(sqlStat, key, min)
+	}
 	if err != nil {
 		return 0, err
 	}

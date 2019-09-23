@@ -76,7 +76,7 @@ func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 	end, _ := strconv.Atoi(string(command.Get(3)))
 	includeScores := string(command.Get(4)) == "WITHSCORES"
 
-	items, err := redis.sortedsets.Range(tx, key, start, end, includeScores)
+	items, err := redis.sortedsets.Range(tx, key, start, end, "asc", includeScores)
 	if err == nil {
 		return newPgRedisArrayOfStrings(items), nil
 	} else {
@@ -99,5 +99,21 @@ func (cmd *zremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 		return nil, err
 	} else {
 		return newPgRedisInt(updated), nil
+	}
+}
+
+type zrevrangeCommand struct{}
+
+func (cmd *zrevrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+	key := command.Get(1)
+	start, _ := strconv.Atoi(string(command.Get(2)))
+	end, _ := strconv.Atoi(string(command.Get(3)))
+	includeScores := string(command.Get(4)) == "WITHSCORES"
+
+	items, err := redis.sortedsets.Range(tx, key, start, end, "desc", includeScores)
+	if err == nil {
+		return newPgRedisArrayOfStrings(items), nil
+	} else {
+		return nil, err
 	}
 }

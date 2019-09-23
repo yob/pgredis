@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
 )
 
 type SortedSetRepository struct{}
@@ -72,7 +74,10 @@ func (repo *SortedSetRepository) Cardinality(tx *sql.Tx, key []byte) (count int6
 	return count, nil
 }
 
-func (repo *SortedSetRepository) Range(tx *sql.Tx, key []byte, start int, end int, withScores bool) ([]string, error) {
+func (repo *SortedSetRepository) Range(tx *sql.Tx, key []byte, start int, end int, direction string, withScores bool) ([]string, error) {
+	if direction != "asc" && direction != "desc" {
+		return nil, errors.New("direction must be 'asc' or 'desc'")
+	}
 	var setLength int
 	result := make([]string, 0)
 
@@ -109,16 +114,18 @@ func (repo *SortedSetRepository) Range(tx *sql.Tx, key []byte, start int, end in
 	sqlStat = `
 		WITH subset AS (
 			SELECT rediszsets.value, score,
-			ROW_NUMBER () OVER (ORDER BY score,rediszsets.value)-1 as row
+			ROW_NUMBER () OVER (ORDER BY score %s,rediszsets.value)-1 as row
 			FROM redisdata INNER JOIN rediszsets ON redisdata.key = rediszsets.key
 			WHERE redisdata.key = $1 AND
 				(redisdata.expires_at > now() OR expires_at IS NULL)
-			)
+		)
 		SELECT value, score
 		FROM subset
 		WHERE (row BETWEEN $2 AND $3)
 		ORDER BY row
 	`
+	sqlStat = fmt.Sprintf(sqlStat, direction)
+	fmt.Println(sqlStat)
 	rows, err := tx.Query(sqlStat, key, start, end)
 	if err != nil {
 		return result, err

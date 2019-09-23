@@ -428,4 +428,67 @@ RSpec.shared_examples "sorted sets" do
       end
     end
   end
+  context "zremrangebyrank" do
+    context "when the set doesn't exist" do
+      it "returns 0" do
+        expect(
+          redis.zremrangebyrank("foo", 0, 1)
+        ).to eql(0)
+      end
+    end
+    context "when the set has 3 items" do
+      before do
+        redis.zadd("foo","2","b")
+        redis.zadd("foo","1","a")
+        redis.zadd("foo","3","c")
+      end
+      context "removing two of them" do
+        it "returns 2 and removes the items from the set" do
+          expect(
+            redis.zremrangebyrank("foo", 0, 1)
+          ).to eql(2)
+
+          expect(
+            redis.zrange("foo",0,2, with_scores: true)
+          ).to eql([
+            ["c", 3.0]
+          ])
+        end
+      end
+      context "removing the middle one" do
+        it "returns 1 and removes the item from the set" do
+          expect(
+            redis.zremrangebyrank("foo", 1, 1)
+          ).to eql(1)
+
+          expect(
+            redis.zrange("foo",0,2, with_scores: true)
+          ).to eql([
+            ["a", 1.0],
+            ["c", 3.0],
+          ])
+        end
+      end
+    end
+    context "when the set has 3 items with equal scores" do
+      before do
+        redis.zadd("foo","1","a")
+        redis.zadd("foo","1","b")
+        redis.zadd("foo","1","c")
+      end
+      context "removing two of them" do
+        it "returns 2 and removes the items from the set" do
+          expect(
+            redis.zremrangebyrank("foo", 0, 1)
+          ).to eql(2)
+
+          expect(
+            redis.zrange("foo",0,2, with_scores: true)
+          ).to eql([
+            ["c", 1.0]
+          ])
+        end
+      end
+    end
+  end
 end

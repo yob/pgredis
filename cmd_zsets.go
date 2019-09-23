@@ -102,6 +102,21 @@ func (cmd *zremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	}
 }
 
+type zremrangebyrankCommand struct{}
+
+func (cmd *zremrangebyrankCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+	key := command.Get(1)
+	start, _ := strconv.Atoi(string(command.Get(2)))
+	end, _ := strconv.Atoi(string(command.Get(3)))
+
+	removed, err := redis.sortedsets.RemoveRangeByRank(tx, key, start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	return newPgRedisInt(removed), nil
+}
+
 type zrevrangeCommand struct{}
 
 func (cmd *zrevrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {

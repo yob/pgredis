@@ -204,3 +204,89 @@ func (repo *SortedSetRepository) Remove(tx *sql.Tx, key []byte, values [][]byte)
 
 	return count, nil
 }
+
+func (repo *SortedSetRepository) RemoveRangeByRank(tx *sql.Tx, key []byte, start int, end int) (count int64, err error) {
+	var lockedKey string
+	var setLength int
+
+	// delete any expired rows in the db with this key
+	// we do this first so the count we return at the end doesn't include these rows
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	_, err = tx.Exec(sqlStat, key)
+	if err != nil {
+		return 0, err
+	}
+
+	// now lock that key so no one else can change it
+	sqlStat = "SELECT key FROM redisdata WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL) FOR UPDATE"
+	err = tx.QueryRow(sqlStat, key).Scan(&lockedKey)
+
+	if err == sql.ErrNoRows {
+		return 0, nil
+	} else if err != nil {
+		return 0, err
+	}
+
+	// TODO this start/end logic is *VERY* similar to logic in ListRepository.Lrange, Maybe it could
+	// be extracted into a shared internal package?
+	// start normalise start/end values
+	if start < 0 {
+		start = setLength + start
+	}
+
+	if end < 0 {
+		end = setLength + end
+	}
+
+	//end += 1
+
+	if start < 0 {
+		start = 0
+	}
+
+	if end < start {
+		end = start
+	}
+	// end normalise start/end values
+
+	// The start and end values we have assume a zero-indexed set, but in the database we don't store an index
+	// This uses a CTE to select the set values and assign an in-memory zero-index that we can select on
+	sqlStat = `
+		WITH subset AS (
+			SELECT rediszsets.ctid, rediszsets.value, score,
+			ROW_NUMBER () OVER (ORDER BY score,rediszsets.value)-1 as row
+			FROM redisdata INNER JOIN rediszsets ON redisdata.key = rediszsets.key
+			WHERE redisdata.key = $1 AND
+				(redisdata.expires_at > now() OR expires_at IS NULL)
+		)
+		DELETE FROM rediszsets
+		WHERE key = $1 AND ctid IN (
+			SELECT ctid from subset WHERE row >= $2 AND row <= $3
+		)
+	`
+	res, err := tx.Exec(sqlStat, key, start, end)
+	if err != nil {
+		return 0, err
+	}
+	rowCount, _ := res.RowsAffected()
+	count += rowCount
+
+	// if the set is now empty, delete it
+	var remainingMembers int64
+	sqlStat = "SELECT count(*) FROM redisdata INNER JOIN rediszsets ON redisdata.key = rediszsets.key WHERE redisdata.key = $1"
+	err = tx.QueryRow(sqlStat, key).Scan(&remainingMembers)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if remainingMembers == 0 {
+		sqlStat = "DELETE FROM redisdata WHERE key=$1"
+		_, err := tx.Exec(sqlStat, key)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return count, nil
+}

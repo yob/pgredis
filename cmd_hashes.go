@@ -2,7 +2,7 @@ package pgredis
 
 import (
 	"database/sql"
-	"github.com/secmask/go-redisproto"
+	"github.com/yob/go-redisproto"
 	"log"
 )
 

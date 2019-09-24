@@ -12,7 +12,7 @@ import (
 	"github.com/yob/pgredis/internal/repositories"
 
 	_ "github.com/lib/pq"
-	"github.com/secmask/go-redisproto"
+	"github.com/yob/go-redisproto"
 )
 
 type PgRedis struct {

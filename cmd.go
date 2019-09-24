@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"database/sql"
-	"github.com/secmask/go-redisproto"
+	"github.com/yob/go-redisproto"
 )
 
 type redisCommand interface {

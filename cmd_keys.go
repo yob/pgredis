@@ -5,7 +5,7 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/secmask/go-redisproto"
+	"github.com/yob/go-redisproto"
 )
 
 type delCommand struct{}

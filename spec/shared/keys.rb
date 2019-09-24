@@ -104,6 +104,12 @@ RSpec.shared_examples "keys" do
         redis.expire("foo", 10)
         expect(redis.ttl("foo")).to be_between(0, 10)
       end
+
+      it "sets a 5-year expiry on the key" do
+        five_years_in_secons = 5 * 365 * 24 * 60 * 60
+        redis.expire("foo", five_years_in_secons)
+        expect(redis.ttl("foo")).to be_between(five_years_in_secons-60, five_years_in_secons)
+      end
     end
 
     context "when the key already exists but it's expired" do

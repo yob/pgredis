@@ -47,13 +47,15 @@ func (repo *KeyRepository) Exist(tx *sql.Tx, key []byte) (bool, error) {
 	return count > 0, nil
 }
 
-func (repo *KeyRepository) SetExpire(tx *sql.Tx, key []byte, expiry_millis int) (updated bool, err error) {
-	if expiry_millis <= 0 {
-		return false, errors.New("expiry must be 1ms or more")
+func (repo *KeyRepository) SetExpire(tx *sql.Tx, key []byte, expiry_secs int) (updated bool, err error) {
+	if expiry_secs <= 0 {
+		return false, errors.New("expiry_secs must be 1s or more")
+	} else if > 1000000000 {
+		return false, errors.New("expiry_secs must be 1,000,000,000 or lower") // that's over 31 years
 	}
 
 	sqlStat := "UPDATE redisdata SET expires_at=(now() + cast($2 as interval)) WHERE key=$1 AND (expires_at > now() OR expires_at IS NULL)"
-	interval := fmt.Sprintf("%d milliseconds", expiry_millis)
+	interval := fmt.Sprintf("%d seconds", expiry_secs)
 	res, err := tx.Exec(sqlStat, key, interval)
 	if err != nil {
 		return false, err

@@ -48,7 +48,7 @@ func (cmd *expireCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 	key := command.Get(1)
 	seconds, _ := strconv.Atoi(string(command.Get(2)))
 
-	success, err := redis.keys.SetExpire(tx, key, seconds*1000)
+	success, err := redis.keys.SetExpire(tx, key, seconds)
 	if success {
 		return newPgRedisInt(1), nil
 	} else {

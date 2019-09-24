@@ -75,7 +75,35 @@ RSpec.shared_examples "lists" do
         ).to eql(1)
       end
     end
+  end
 
+  context "lpop" do
+    context "when the list doesn't exist" do
+      context "removing the last item" do
+        it "returns nil" do
+          expect(
+            redis.lpop("foo")
+          ).to eql(nil)
+        end
+      end
+    end
+    context "when the list exists with a two item" do
+      before do
+        redis.lpush("foo", ["aaa", "bbb"])
+      end
+
+      context "removing a single item" do
+        it "returns the final items and removes the item from the list" do
+          expect(
+            redis.lpop("foo")
+          ).to eql("bbb")
+          expect(
+            redis.lrange("foo", 0, -1)
+          ).to eql(["aaa"])
+        end
+      end
+
+    end
   end
 
   context "lpush" do

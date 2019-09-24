@@ -3,6 +3,7 @@ package repositories
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 
 	_ "github.com/lib/pq"
 )
@@ -22,6 +23,10 @@ func (repo *ListRepository) Length(tx *sql.Tx, key []byte) (int, error) {
 		return 0, err
 	}
 	return count, nil
+}
+
+func (repo *ListRepository) LeftPop(tx *sql.Tx, key []byte) (bool, []byte, error) {
+	return repo.pop(tx, key, "left")
 }
 
 func (repo *ListRepository) LeftPush(tx *sql.Tx, key []byte, values [][]byte) (int, error) {
@@ -129,7 +134,19 @@ func (repo *ListRepository) LeftRemove(tx *sql.Tx, key []byte, count int, value 
 }
 
 func (repo *ListRepository) RightPop(tx *sql.Tx, key []byte) (bool, []byte, error) {
+	return repo.pop(tx, key, "right")
+}
+
+func (repo *ListRepository) RightPush(tx *sql.Tx, key []byte, values [][]byte) (int, error) {
+	return repo.push(tx, key, "right", values)
+}
+
+func (repo *ListRepository) pop(tx *sql.Tx, key []byte, direction string) (bool, []byte, error) {
 	var value []byte
+
+	if direction != "left" && direction != "right" {
+		return false, value, errors.New("direction must be left or right")
+	}
 
 	// delete any expired rows in the db with this key
 	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
@@ -153,7 +170,7 @@ func (repo *ListRepository) RightPop(tx *sql.Tx, key []byte) (bool, []byte, erro
 			FROM redisdata INNER JOIN redislists ON redisdata.key = redislists.key
 			WHERE redisdata.key = $1 AND
 				(redisdata.expires_at > now() OR expires_at IS NULL)
-			ORDER BY redislists.idx desc
+			ORDER BY redislists.idx %s
 			LIMIT 1
 		)
 		DELETE
@@ -161,6 +178,11 @@ func (repo *ListRepository) RightPop(tx *sql.Tx, key []byte) (bool, []byte, erro
 		WHERE key IN (SELECT key FROM sublist) AND idx IN (SELECT idx FROM sublist) AND value IN (SELECT value FROM sublist)
 		RETURNING value
 	`
+	if direction == "left" {
+		sqlStat = fmt.Sprintf(sqlStat, "asc")
+	} else {
+		sqlStat = fmt.Sprintf(sqlStat, "desc")
+	}
 	err = tx.QueryRow(sqlStat, key).Scan(&value)
 	if err == sql.ErrNoRows {
 		return false, value, nil
@@ -186,10 +208,6 @@ func (repo *ListRepository) RightPop(tx *sql.Tx, key []byte) (bool, []byte, erro
 	}
 
 	return true, value, nil
-}
-
-func (repo *ListRepository) RightPush(tx *sql.Tx, key []byte, values [][]byte) (int, error) {
-	return repo.push(tx, key, "right", values)
 }
 
 func (repo *ListRepository) push(tx *sql.Tx, key []byte, direction string, values [][]byte) (int, error) {

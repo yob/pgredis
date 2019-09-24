@@ -51,6 +51,21 @@ func (cmd *llenCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	return newPgRedisInt(int64(length)), nil
 }
 
+type lpopCommand struct{}
+
+func (cmd *lpopCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+	key := command.Get(1)
+	success, value, err := redis.lists.LeftPop(tx, key)
+	if err != nil {
+		return nil, err
+	}
+	if success {
+		return newPgRedisString(string(value)), nil
+	} else {
+		return newPgRedisNil(), nil
+	}
+}
+
 type lpushCommand struct{}
 
 func (cmd *lpushCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {

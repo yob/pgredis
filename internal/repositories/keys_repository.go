@@ -52,7 +52,7 @@ func (repo *KeyRepository) Exist(tx *sql.Tx, key []byte) (bool, error) {
 func (repo *KeyRepository) SetExpire(tx *sql.Tx, key []byte, expiry_secs int) (updated bool, err error) {
 	if expiry_secs <= 0 {
 		return false, errors.New("expiry_secs must be 1s or more")
-	} else if > 1000000000 {
+	} else if expiry_secs > 1000000000 {
 		return false, errors.New("expiry_secs must be 1,000,000,000 or lower") // that's over 31 years
 	}
 

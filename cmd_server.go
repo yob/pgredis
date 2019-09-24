@@ -2,8 +2,8 @@ package pgredis
 
 import (
 	"database/sql"
-	"strings"
 	"github.com/secmask/go-redisproto"
+	"strings"
 )
 
 type flushallCommand struct{}

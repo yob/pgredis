@@ -59,6 +59,23 @@ func (cmd *expireCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 	}
 }
 
+type pttlCommand struct{}
+
+func (cmd *pttlCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+	key := command.Get(1)
+	// this should probably use KeyRepository and not be string specific
+	keyExists, millis, err := redis.keys.TTLInMillis(tx, key)
+	if keyExists && millis > 0 {
+		return newPgRedisInt(millis), nil
+	} else if keyExists {
+		return newPgRedisInt(-1), nil // the key exists, but it won't expire
+	} else if !keyExists && err == nil {
+		return newPgRedisInt(-2), nil // the key didn't exist
+	} else {
+		return nil, err
+	}
+}
+
 type ttlCommand struct{}
 
 func (cmd *ttlCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {

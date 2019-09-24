@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/lib/pq"
+	"time"
 )
 
 type KeyRepository struct{}
@@ -67,6 +69,27 @@ func (repo *KeyRepository) SetExpire(tx *sql.Tx, key []byte, expiry_secs int) (u
 		return false, err
 	}
 	return updated, nil
+}
+
+func (repo *KeyRepository) TTLInMillis(tx *sql.Tx, key []byte) (bool, int64, error) {
+	var expiresAt pq.NullTime
+
+	sqlStat := "SELECT expires_at FROM redisdata WHERE key = $1 AND (expires_at > now() OR expires_at IS NULL)"
+	row := tx.QueryRow(sqlStat, key)
+
+	switch err := row.Scan(&expiresAt); err {
+	case sql.ErrNoRows:
+		return false, 0, nil
+	case nil:
+		// the key is found, but the expiry time is null
+		if !expiresAt.Valid {
+			return true, 0, nil
+		}
+		diff := expiresAt.Time.Sub(time.Now()).Milliseconds()
+		return true, int64(diff), nil
+	default:
+		return false, 0, err
+	}
 }
 
 func (repo *KeyRepository) Type(tx *sql.Tx, key []byte) (string, error) {

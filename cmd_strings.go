@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/32bitkid/bitreader"
-	"github.com/secmask/go-redisproto"
+	"github.com/yob/go-redisproto"
 )
 
 type appendCommand struct{}

@@ -2,6 +2,7 @@ package pgredis
 
 import (
 	"database/sql"
+	"strings"
 	"github.com/secmask/go-redisproto"
 )
 
@@ -14,4 +15,26 @@ func (cmd *flushallCommand) Execute(command *redisproto.Command, redis *PgRedis,
 	} else {
 		return nil, err
 	}
+}
+
+type infoCommand struct{}
+
+func (cmd *infoCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+	result := make([]string,0)
+	result = append(result, "# Server")
+	result = append(result, "redis_version:0.0.1")
+	result = append(result, "uptime_in_days:0")
+	result = append(result, "# Clients")
+	result = append(result, "connected_clients:1")
+	result = append(result, "# Memory")
+	result = append(result, "used_memory_human:834.12K")
+	result = append(result, "used_memory_peak_human:834.12K")
+	result = append(result, "# Persistence")
+	result = append(result, "# Stats")
+	result = append(result, "# Replication")
+	result = append(result, "# CPU")
+	result = append(result, "# Cluster")
+	result = append(result, "cluster_enabled:0")
+	result = append(result, "# Keyspace")
+	return newPgRedisString(strings.Join(result, "\r\n")), nil
 }

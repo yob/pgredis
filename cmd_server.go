@@ -28,7 +28,7 @@ type infoCommand struct{}
 func (cmd *infoCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	result := make([]string, 0)
 	result = append(result, "# Server")
-	result = append(result, "redis_version:0.0.1")
+	result = append(result, "redis_version:5.0.5")
 	result = append(result, "uptime_in_days:0")
 	result = append(result, "# Clients")
 	result = append(result, "connected_clients:1")

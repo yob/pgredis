@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/yob/pgredis/internal/repositories"
@@ -23,6 +24,7 @@ type PgRedis struct {
 	lists      *repositories.ListRepository
 	sets       *repositories.SetRepository
 	sortedsets *repositories.SortedSetRepository
+	connCount  uint64
 	db         *sql.DB
 }
 
@@ -50,6 +52,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 		lists:      repositories.NewListRepository(),
 		sets:       repositories.NewSetRepository(),
 		sortedsets: repositories.NewSortedSetRepository(),
+		connCount:  0,
 		db:         db,
 		commands: map[string]redisCommand{
 			"APPEND":           &appendCommand{},
@@ -147,6 +150,7 @@ func (redis *PgRedis) StartServer(bindAddress string, port int) error {
 			log.Println("Error on accept: ", err)
 			continue
 		}
+		atomic.AddUint64(&redis.connCount, 1)
 		go redis.handleConnection(conn)
 	}
 }

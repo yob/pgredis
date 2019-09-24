@@ -2,6 +2,7 @@ package pgredis
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/yob/go-redisproto"
 	"strings"
 )
@@ -37,6 +38,7 @@ func (cmd *infoCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	result = append(result, "used_memory_peak_human:834.12K")
 	result = append(result, "# Persistence")
 	result = append(result, "# Stats")
+	result = append(result, fmt.Sprintf("total_connections_received:%d", redis.connCount))
 	result = append(result, "# Replication")
 	result = append(result, "# CPU")
 	result = append(result, "# Cluster")

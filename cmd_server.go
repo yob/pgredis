@@ -20,7 +20,7 @@ func (cmd *flushallCommand) Execute(command *redisproto.Command, redis *PgRedis,
 type infoCommand struct{}
 
 func (cmd *infoCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
-	result := make([]string,0)
+	result := make([]string, 0)
 	result = append(result, "# Server")
 	result = append(result, "redis_version:0.0.1")
 	result = append(result, "uptime_in_days:0")

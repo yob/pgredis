@@ -199,6 +199,11 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 	var txerr error
 	var multiResponses = []pgRedisValue{}
 	mode := "single"
+	defer func() {
+		if tx != nil {
+			tx.Rollback()
+		}
+	}()
 	for {
 		command, err := parser.ReadCommand()
 		if err != nil {

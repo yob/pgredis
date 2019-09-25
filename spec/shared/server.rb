@@ -14,4 +14,13 @@ RSpec.shared_examples "server" do
     end
 
   end
+
+  context "client setname" do
+    it "returns data separated by newlines (converted to a Hash by redis-rb)" do
+      expect(
+        redis.client("setname", "foo")
+      ).to eql("OK")
+    end
+
+  end
 end

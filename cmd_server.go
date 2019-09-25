@@ -2,6 +2,7 @@ package pgredis
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/yob/go-redisproto"
 	"strings"
@@ -15,6 +16,17 @@ func (cmd *flushallCommand) Execute(command *redisproto.Command, redis *PgRedis,
 		return newPgRedisString("OK"), nil
 	} else {
 		return nil, err
+	}
+}
+
+type clientCommand struct{}
+
+func (cmd *clientCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+	subcommand := strings.ToUpper(string(command.Get(1)))
+	if subcommand == "SETNAME" {
+		return newPgRedisString("OK"), nil
+	} else {
+		return nil, errors.New(fmt.Sprintf("Unrecognised client subcommand: %s", subcommand))
 	}
 }
 

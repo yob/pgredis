@@ -282,6 +282,30 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 			if txerr != nil {
 				ew = writer.WriteError(txerr.Error())
 			}
+
+			{
+				fmt.Println("post-tx log")
+				rows, err := redis.db.Query("SELECT key, idx, value from redislists order by key, idx")
+				if err != nil {
+					panic(err)
+				}
+				defer rows.Close()
+
+				for rows.Next() {
+					var key, value string
+					var idx int
+					err = rows.Scan(&key, &idx, &value)
+					if err != nil {
+						panic(err)
+					}
+					fmt.Printf("list row: %s %d %s\n", key, idx, value)
+				}
+				err = rows.Err()
+				if err != nil {
+					panic(err)
+				}
+			}
+			//time.Sleep(1 * time.Second)
 		} else {
 			log.Printf("MULTI command execution: %s\n", commandToFullString(command))
 			if cmdString != "MULTI" && cmdString != "EXEC" && cmdString != "DISCARD" {

@@ -315,9 +315,10 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 					ew = writer.WriteError(txerr.Error())
 				}
 				redisArray := newPgRedisArray(multiResponses)
-				foo := redisArray.writeTo(buffer)
-				if foo != nil {
-					log.Printf("serialisation error\n", foo)
+				err = redisArray.writeTo(buffer)
+				if err != nil {
+					newPgRedisError(err.Error()).writeTo(buffer)
+					break
 				}
 				buffer.Flush()
 				multiResponses = make([]pgRedisValue, 0)

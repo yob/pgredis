@@ -204,6 +204,22 @@ RSpec.shared_examples "sorted sets" do
         end
       end
 
+      context "reading the fist item using a negative index" do
+        it "returns an array" do
+          expect(
+            redis.zrange("foo", 0, -3)
+          ).to eql(["a"])
+        end
+      end
+
+      context "reading no items using a negative index" do
+        it "returns an empty array" do
+          expect(
+            redis.zrange("foo", 0, -4)
+          ).to eql([])
+        end
+      end
+
       context "skipping the first item" do
         it "returns an array" do
           expect(

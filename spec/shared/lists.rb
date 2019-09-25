@@ -193,6 +193,22 @@ RSpec.shared_examples "lists" do
         end
       end
 
+      context "reading the first item using a negative index" do
+        it "returns an array" do
+          expect(
+            redis.lrange("foo", 0, -3)
+          ).to eql(["a"])
+        end
+      end
+
+      context "reading the no items using a negative index" do
+        it "returns an array" do
+          expect(
+            redis.lrange("foo", 0, -4)
+          ).to eql([])
+        end
+      end
+
       context "skipping the first item" do
         it "returns an array" do
           expect(

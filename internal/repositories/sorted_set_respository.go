@@ -286,6 +286,12 @@ func (repo *SortedSetRepository) RemoveRangeByRank(tx *sql.Tx, key []byte, start
 		return 0, err
 	}
 
+	sqlStat = "SELECT count(*) FROM redisdata INNER JOIN rediszsets ON redisdata.key = rediszsets.key WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL)"
+	err = tx.QueryRow(sqlStat, key).Scan(&setLength)
+	if err != nil {
+		return 0, err
+	}
+
 	// TODO this start/end logic is *VERY* similar to logic in ListRepository.Lrange, Maybe it could
 	// be extracted into a shared internal package?
 	// start normalise start/end values

@@ -611,6 +611,35 @@ RSpec.shared_examples "sorted sets" do
           ])
         end
       end
+      context "removing the first item with 0, -3" do
+        it "returns 1 and removes the first item" do
+          expect(
+            redis.zremrangebyrank("foo", 0, -3)
+          ).to eql(1)
+
+          expect(
+            redis.zrange("foo",0,2, with_scores: true)
+          ).to eql([
+            ["b", 2.0],
+            ["c", 3.0],
+          ])
+        end
+      end
+      context "removing no items with 0, -4" do
+        it "returns 0 and removes no items" do
+          expect(
+            redis.zremrangebyrank("foo", 0, -4)
+          ).to eql(0)
+
+          expect(
+            redis.zrange("foo",0,2, with_scores: true)
+          ).to eql([
+            ["a", 1.0],
+            ["b", 2.0],
+            ["c", 3.0],
+          ])
+        end
+      end
     end
     context "when the set has 3 items with equal scores" do
       before do

@@ -33,6 +33,14 @@ RSpec.shared_examples "lists" do
           ).to eql(["aaa"])
         end
       end
+
+      context "requesting a single item from a non-existing list, then this one" do
+        it "returns an item from the list that exists" do
+          expect(
+            redis.brpop(["bar","foo"], timeout: 2)
+          ).to eql(["foo", "bbb"])
+        end
+      end
     end
 
     context "when a list exists with an item each" do
@@ -42,7 +50,7 @@ RSpec.shared_examples "lists" do
       end
 
       context "removing a single item from both lists" do
-        it "returns the corcect item and removes it from the list" do
+        it "returns the correct item and removes it from the list" do
           expect(
             redis.brpop(["foo","bar"], timeout: 1)
           ).to eql(["foo", "aaa"])

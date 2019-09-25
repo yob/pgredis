@@ -18,9 +18,8 @@ func (cmd *brpopCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 	for i := 1; i <= listCount; i++ {
 		listKeys = append(listKeys, string(command.Get(i)))
 	}
-	fmt.Printf("%d %v\n", listCount, listKeys)
 	startTime := time.Now()
-	timeout := fmt.Sprintf("%ss", string(command.Get(2)))
+	timeout := fmt.Sprintf("%ss", string(command.Get(command.ArgCount()-1)))
 	maxDuration, _ := time.ParseDuration(timeout)
 	for {
 		for _, key := range listKeys {

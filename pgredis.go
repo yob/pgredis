@@ -329,6 +329,8 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 			break
 		}
 	}
+	// ensure everything is written to the socket before we close it
+	buffer.Flush()
 }
 
 func printDbStats(db *sql.DB) {

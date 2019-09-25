@@ -217,6 +217,16 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 			if txerr != nil {
 				ew = writer.WriteError(txerr.Error())
 			}
+			_, err = tx.Exec("SET statement_timeout = 5000")
+			if err != nil {
+				log.Printf("Error setting statement timeout")
+				break
+			}
+			_, err = tx.Exec("SET lock_timeout = 5000")
+			if err != nil {
+				log.Printf("Error setting lock timeout")
+				break
+			}
 			log.Printf("opened MULTi transaction, sending OK\n")
 			writer.WriteSimpleString("OK")
 			writer.Flush()
@@ -228,6 +238,16 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 			tx, txerr := redis.db.Begin()
 			if txerr != nil {
 				ew = writer.WriteError(txerr.Error())
+			}
+			_, err = tx.Exec("SET statement_timeout = 5000")
+			if err != nil {
+				log.Printf("Error setting statement timeout")
+				break
+			}
+			_, err = tx.Exec("SET lock_timeout = 5000")
+			if err != nil {
+				log.Printf("Error setting lock timeout")
+				break
 			}
 
 			result, err := cmd.Execute(command, redis, tx)

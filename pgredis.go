@@ -244,6 +244,7 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 			writer.Flush()
 		}
 		if mode == "single" {
+			log.Printf("single command execution: %s\n", commandToFullString(command))
 			cmd := redis.selectCmd(cmdString)
 
 			// start a db transaction
@@ -282,7 +283,7 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 				ew = writer.WriteError(txerr.Error())
 			}
 		} else {
-			log.Printf("MULTI command execution: %s\n", cmdString)
+			log.Printf("MULTI command execution: %s\n", commandToFullString(command))
 			if cmdString != "MULTI" && cmdString != "EXEC" && cmdString != "DISCARD" {
 				cmd := redis.selectCmd(cmdString)
 				result, err := cmd.Execute(command, redis, tx)
@@ -295,6 +296,7 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 				writer.WriteSimpleString("QUEUED")
 				writer.Flush()
 			}
+			log.Printf(" done %s\n", cmdString)
 		}
 
 		if cmdString == "DISCARD" {
@@ -345,4 +347,15 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 func printDbStats(db *sql.DB) {
 	stats := db.Stats()
 	log.Printf("Database connection open with %d max connections", stats.MaxOpenConnections)
+}
+
+func commandToFullString(command *redisproto.Command) string {
+	result := ""
+	for i := 0; i < command.ArgCount(); i++ {
+		if len(result) > 0 {
+			result += " "
+		}
+		result += string(command.Get(i))
+	}
+	return result
 }

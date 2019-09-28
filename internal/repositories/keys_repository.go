@@ -120,7 +120,7 @@ func (repo *KeyRepository) Type(tx *sql.Tx, key []byte) (string, error) {
 }
 
 func (repo *KeyRepository) FlushAll(tx *sql.Tx) error {
-	sqlStat := "DELETE FROM redisdata"
+	sqlStat := "TRUNCATE redisdata CASCADE"
 	_, err := tx.Exec(sqlStat)
 	if err != nil {
 		return err

@@ -195,7 +195,7 @@ func (redis *PgRedis) selectCmd(cmdString string) redisCommand {
 
 func (redis *PgRedis) handleConnection(conn net.Conn) {
 	defer conn.Close()
-	parser := redisproto.NewParser(conn)
+	parser := redisproto.NewParserWithMaxArgCount(conn, 1024)
 	buffer := bufio.NewWriter(conn)
 	writer := redisproto.NewWriter(buffer)
 	var ew error

@@ -20,6 +20,8 @@ github.com/yob/go-redisproto v0.1.1-0.20190924135515-8cc954c500fc h1:vrduQBvTqop
 github.com/yob/go-redisproto v0.1.1-0.20190924135515-8cc954c500fc/go.mod h1:YnVQzH3ffq4F52AbUmmX9qniJRS0H0SgSicRxblrDro=
 github.com/yob/go-redisproto v0.1.1-0.20190924140115-38da06218a87 h1:0CrLDYutPyit+7wFvK4uA4nNVtB2hacpveBpNzQXIKQ=
 github.com/yob/go-redisproto v0.1.1-0.20190924140115-38da06218a87/go.mod h1:YnVQzH3ffq4F52AbUmmX9qniJRS0H0SgSicRxblrDro=
+github.com/yob/go-redisproto v0.1.1-0.20190928141640-0272a7451a96 h1:YtSWG9f5EdVq7xRLS4vbcJtyu7rfVu2lw3dwz74x+3o=
+github.com/yob/go-redisproto v0.1.1-0.20190928141640-0272a7451a96/go.mod h1:YnVQzH3ffq4F52AbUmmX9qniJRS0H0SgSicRxblrDro=
 golang.org/x/arch v0.0.0-20190312162104-788fe5ffcd8c h1:Rx/HTKi09myZ25t1SOlDHmHOy/mKxNAcu0hP1oPX9qM=
 golang.org/x/arch v0.0.0-20190312162104-788fe5ffcd8c/go.mod h1:flIaEI6LNU6xOCD5PaJvn9wGP0agmIOqjrtsKGRguv4=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=

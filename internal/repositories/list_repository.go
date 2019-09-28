@@ -216,9 +216,16 @@ func (repo *ListRepository) push(tx *sql.Tx, key []byte, direction string, value
 	}
 	var newLength int
 
-	// delete any expired rows in the db with this key
-	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	// take an exclusive lock for this key
+	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
 	_, err := tx.Exec(sqlStat, key)
+	if err != nil {
+		return 0, err
+	}
+
+	// delete any expired rows in the db with this key
+	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	_, err = tx.Exec(sqlStat, key)
 	if err != nil {
 		return 0, err
 	}

@@ -46,7 +46,7 @@ func main() {
 				},
 				cli.IntFlag{
 					Name:   "max-connections",
-					Usage:  "the maximum number of database connections to open (default: 25)",
+					Usage:  "the maximum number of database connections to open",
 					EnvVar: "MAX_CONNECTIONS",
 					Value:  25,
 				},

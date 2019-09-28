@@ -35,6 +35,20 @@ This project aims to:
   the database, are ignored by read commands, and are only removed when a write
   command notices them.
 
+## Building and Running
+
+We use a docker based environment to build against a consistent golang environment.
+
+    $ ./auto/build
+
+The compiled binary will be stored in bin/. To start the server:
+
+    $ ./bin/pgredis server --database "postgres://user:password@host/dbname?sslmode=disable"
+
+The specific database URL will vary depending on your environment. Once a
+connection to the database is successfully opened, pgredis will automatically
+create a the tables it needs.
+
 ## Development
 
 There's not much here yet. To play along, install docker and start the server

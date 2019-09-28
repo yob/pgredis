@@ -14,6 +14,17 @@ func NewKeyRepository() *KeyRepository {
 	return &KeyRepository{}
 }
 
+func (repo *KeyRepository) Count(tx *sql.Tx) (int64, error) {
+	var count int64
+
+	sqlStat := "SELECT count(*) FROM redisdata WHERE redisdata.expires_at > now() OR expires_at IS NULL"
+	err := tx.QueryRow(sqlStat).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func (repo *KeyRepository) Delete(tx *sql.Tx, key []byte) (updated bool, err error) {
 
 	// delete any expired rows in the db with this key

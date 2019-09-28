@@ -30,6 +30,16 @@ func (cmd *clientCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 	}
 }
 
+type dbsizeCommand struct{}
+
+func (cmd *dbsizeCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+	count, err := redis.keys.Count(tx)
+	if err != nil {
+		return nil, err
+	}
+	return newPgRedisInt(count), nil
+}
+
 type infoCommand struct{}
 
 func (cmd *infoCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {

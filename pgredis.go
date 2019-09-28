@@ -59,6 +59,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 			"BITCOUNT":         &bitcountCommand{},
 			"BRPOP":            &brpopCommand{},
 			"CLIENT":           &clientCommand{},
+			"DBSIZE":           &dbsizeCommand{},
 			"DECR":             &decrCommand{},
 			"DEL":              &delCommand{},
 			"DECRBY":           &decrbyCommand{},

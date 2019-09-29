@@ -12,13 +12,14 @@ func (cmd *hgetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	key := command.Get(1)
 	field := command.Get(2)
 	success, value, err := redis.hashes.Get(tx, key, field)
-	if success {
-		return newPgRedisString(string(value)), nil
-	} else if !success && err == nil {
-		return newPgRedisNil(), nil
-	} else {
+	if err != nil {
 		log.Println("ERROR: ", err.Error())
 		return nil, err
+	}
+	if success {
+		return newPgRedisString(string(value)), nil
+	} else {
+		return newPgRedisNil(), nil
 	}
 }
 
@@ -46,9 +47,8 @@ func (cmd *hgetallCommand) Execute(command *redisproto.Command, redis *PgRedis, 
 	fields_and_values, err := redis.hashes.GetAll(tx, key)
 	if err != nil {
 		return nil, err
-	} else {
-		return newPgRedisArrayOfStrings(fields_and_values), nil
 	}
+	return newPgRedisArrayOfStrings(fields_and_values), nil
 }
 
 type hmsetCommand struct{}
@@ -61,11 +61,10 @@ func (cmd *hmsetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 		items[string(command.Get(i))] = string(command.Get(i + 1))
 	}
 	err := redis.hashes.SetMultiple(tx, key, items)
-	if err == nil {
-		return newPgRedisString("OK"), nil
-	} else {
+	if err != nil {
 		return nil, err
 	}
+	return newPgRedisString("OK"), nil
 }
 
 type hsetCommand struct{}
@@ -77,7 +76,6 @@ func (cmd *hsetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	inserted, err := redis.hashes.Set(tx, key, field, value)
 	if err != nil {
 		return nil, err
-	} else {
-		return newPgRedisInt(inserted), nil
 	}
+	return newPgRedisInt(inserted), nil
 }

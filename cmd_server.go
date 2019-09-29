@@ -12,11 +12,10 @@ type flushallCommand struct{}
 
 func (cmd *flushallCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	err := redis.keys.FlushAll(tx)
-	if err == nil {
-		return newPgRedisString("OK"), nil
-	} else {
+	if err != nil {
 		return nil, err
 	}
+	return newPgRedisString("OK"), nil
 }
 
 type clientCommand struct{}

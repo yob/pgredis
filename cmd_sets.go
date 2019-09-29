@@ -18,9 +18,8 @@ func (cmd *saddCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	updated, err := redis.sets.Add(tx, key, values)
 	if err != nil {
 		return nil, err
-	} else {
-		return newPgRedisInt(updated), nil
 	}
+	return newPgRedisInt(updated), nil
 }
 
 type scardCommand struct{}
@@ -31,9 +30,8 @@ func (cmd *scardCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 	count, err := redis.sets.Cardinality(tx, key)
 	if err != nil {
 		return nil, err
-	} else {
-		return newPgRedisInt(count), nil
 	}
+	return newPgRedisInt(count), nil
 }
 
 type sremCommand struct{}
@@ -48,9 +46,8 @@ func (cmd *sremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	updated, err := redis.sets.Remove(tx, key, values)
 	if err != nil {
 		return nil, err
-	} else {
-		return newPgRedisInt(updated), nil
 	}
+	return newPgRedisInt(updated), nil
 }
 
 type smembersCommand struct{}
@@ -61,9 +58,8 @@ func (cmd *smembersCommand) Execute(command *redisproto.Command, redis *PgRedis,
 	values, err := redis.sets.Members(tx, key)
 	if err != nil {
 		return nil, err
-	} else {
-		return newPgRedisArrayOfStrings(values), nil
 	}
+	return newPgRedisArrayOfStrings(values), nil
 }
 
 type sscanCommand struct{}
@@ -74,10 +70,9 @@ func (cmd *sscanCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 	values, err := redis.sets.Members(tx, key)
 	if err != nil {
 		return nil, err
-	} else {
-		response := make([]pgRedisValue, 0)
-		response = append(response, newPgRedisString("0"))
-		response = append(response, newPgRedisArrayOfStrings(values))
-		return newPgRedisArray(response), nil
 	}
+	response := make([]pgRedisValue, 0)
+	response = append(response, newPgRedisString("0"))
+	response = append(response, newPgRedisArrayOfStrings(values))
+	return newPgRedisArray(response), nil
 }

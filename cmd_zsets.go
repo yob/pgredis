@@ -51,9 +51,8 @@ func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	updated, err := redis.sortedsets.Add(tx, key, values, chArgProvided)
 	if err != nil {
 		return nil, err
-	} else {
-		return newPgRedisInt(updated), nil
 	}
+	return newPgRedisInt(updated), nil
 }
 
 type zcardCommand struct{}
@@ -64,9 +63,8 @@ func (cmd *zcardCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 	count, err := redis.sortedsets.Cardinality(tx, key)
 	if err != nil {
 		return nil, err
-	} else {
-		return newPgRedisInt(count), nil
 	}
+	return newPgRedisInt(count), nil
 }
 
 type zrangeCommand struct{}
@@ -78,11 +76,10 @@ func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 	includeScores := string(command.Get(4)) == "WITHSCORES"
 
 	items, err := redis.sortedsets.Range(tx, key, start, end, "asc", includeScores)
-	if err == nil {
-		return newPgRedisArrayOfStrings(items), nil
-	} else {
+	if err != nil {
 		return nil, err
 	}
+	return newPgRedisArrayOfStrings(items), nil
 }
 
 type zrangebyscoreCommand struct{}
@@ -139,9 +136,8 @@ func (cmd *zremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 
 	if err != nil {
 		return nil, err
-	} else {
-		return newPgRedisInt(updated), nil
 	}
+	return newPgRedisInt(updated), nil
 }
 
 type zremrangebyrankCommand struct{}
@@ -204,11 +200,10 @@ func (cmd *zrevrangeCommand) Execute(command *redisproto.Command, redis *PgRedis
 	includeScores := string(command.Get(4)) == "WITHSCORES"
 
 	items, err := redis.sortedsets.Range(tx, key, start, end, "desc", includeScores)
-	if err == nil {
-		return newPgRedisArrayOfStrings(items), nil
-	} else {
+	if err != nil {
 		return nil, err
 	}
+	return newPgRedisArrayOfStrings(items), nil
 }
 
 func commandLimitOffsetAndCount(command *redisproto.Command) (int, int) {

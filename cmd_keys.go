@@ -49,12 +49,13 @@ func (cmd *expireCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 	seconds, _ := strconv.Atoi(string(command.Get(2)))
 
 	success, err := redis.keys.SetExpire(tx, key, seconds)
+	if err != nil {
+		log.Println("ERROR: ", err.Error())
+		return newPgRedisInt(0), nil
+	}
 	if success {
 		return newPgRedisInt(1), nil
 	} else {
-		if err != nil {
-			log.Println("ERROR: ", err.Error())
-		}
 		return newPgRedisInt(0), nil
 	}
 }
@@ -65,14 +66,15 @@ func (cmd *pttlCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	key := command.Get(1)
 	// this should probably use KeyRepository and not be string specific
 	keyExists, millis, err := redis.keys.TTLInMillis(tx, key)
+	if err != nil {
+		return nil, err
+	}
 	if keyExists && millis > 0 {
 		return newPgRedisInt(millis), nil
 	} else if keyExists {
 		return newPgRedisInt(-1), nil // the key exists, but it won't expire
-	} else if !keyExists && err == nil {
-		return newPgRedisInt(-2), nil // the key didn't exist
 	} else {
-		return nil, err
+		return newPgRedisInt(-2), nil // the key didn't exist
 	}
 }
 
@@ -82,14 +84,15 @@ func (cmd *ttlCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *
 	key := command.Get(1)
 	// this should probably use KeyRepository and not be string specific
 	success, resp, err := redis.strings.Get(tx, key)
+	if err != nil {
+		return nil, err
+	}
 	if success && resp.WillExpire() {
 		return newPgRedisInt(resp.TTLInSeconds()), nil
 	} else if success {
 		return newPgRedisInt(-1), nil // the key exists, but it won't expire
-	} else if !success && err == nil {
-		return newPgRedisInt(-2), nil // the key didn't exist
 	} else {
-		return nil, err
+		return newPgRedisInt(-2), nil // the key didn't exist
 	}
 }
 

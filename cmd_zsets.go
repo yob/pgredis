@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/yob/go-redisproto"
+	"github.com/secmask/go-redisproto"
 )
 
 type zaddCommand struct{}

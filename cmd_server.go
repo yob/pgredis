@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/yob/go-redisproto"
+	"github.com/secmask/go-redisproto"
 	"strings"
 )
 

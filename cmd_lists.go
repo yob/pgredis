@@ -3,7 +3,7 @@ package pgredis
 import (
 	"database/sql"
 	"fmt"
-	"github.com/yob/go-redisproto"
+	"github.com/secmask/go-redisproto"
 	"strconv"
 	"time"
 )

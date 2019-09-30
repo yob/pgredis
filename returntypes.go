@@ -4,7 +4,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/yob/go-redisproto"
+	"github.com/secmask/go-redisproto"
 )
 
 type pgRedisValue interface {

@@ -13,7 +13,7 @@ import (
 	"github.com/yob/pgredis/internal/repositories"
 
 	_ "github.com/lib/pq"
-	"github.com/yob/go-redisproto"
+	"github.com/secmask/go-redisproto"
 )
 
 type PgRedis struct {
@@ -195,7 +195,8 @@ func (redis *PgRedis) selectCmd(cmdString string) redisCommand {
 
 func (redis *PgRedis) handleConnection(conn net.Conn) {
 	defer conn.Close()
-	parser := redisproto.NewParserWithMaxArgCount(conn, 1024)
+	redisproto.MaxNumArg = 1024
+	parser := redisproto.NewParser(conn)
 	buffer := bufio.NewWriter(conn)
 	writer := redisproto.NewWriter(buffer)
 	var ew error

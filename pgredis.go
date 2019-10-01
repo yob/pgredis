@@ -36,6 +36,7 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 		panic(err)
 	}
 
+
 	db.SetMaxOpenConns(maxConnections)
 
 	printDbStats(db)
@@ -44,6 +45,8 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 	if err != nil {
 		panic(err)
 	}
+
+	redisproto.MaxNumArg = 1024
 
 	return &PgRedis{
 		hashes:     repositories.NewHashRepository(),
@@ -195,7 +198,6 @@ func (redis *PgRedis) selectCmd(cmdString string) redisCommand {
 
 func (redis *PgRedis) handleConnection(conn net.Conn) {
 	defer conn.Close()
-	redisproto.MaxNumArg = 1024
 	parser := redisproto.NewParser(conn)
 	buffer := bufio.NewWriter(conn)
 	writer := redisproto.NewWriter(buffer)

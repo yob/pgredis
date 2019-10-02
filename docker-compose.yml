@@ -70,6 +70,7 @@ services:
     volumes:
       - .:/work
       - ruby-2.6.3-gem-cache:/usr/local/bundle
+      - ruby-tmp:/work/tmp
     working_dir: /work
     entrypoint: /work/scripts/bundle-exec
     command: bash
@@ -80,3 +81,4 @@ services:
 volumes:
   pgredis-mod: ~
   ruby-2.6.3-gem-cache: ~
+  ruby-tmp: ~

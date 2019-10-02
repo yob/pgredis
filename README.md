@@ -149,3 +149,9 @@ is our reference implementation, so it is always right.
 
 If the real redis specs are green and a pgredis spec fails, then it's likely a
 bug in pgredis rather than the specs.
+
+We also use the [sidekiq](https://github.com/mperham/sidekiq) test suite as a
+smoke test to confirm basic redis compatibility with a real world application.
+Run the sidekiq tests like this:
+
+    $ ./auto/run-sidekiq-tests

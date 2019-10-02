@@ -1,0 +1,22 @@
+#!/bin/bash -eu
+
+wait-for-socket --description pgredis --address testserver --port 6379
+
+# the sidekiq test suite will honour test
+export REDIS_URL="redis://testserver"
+
+# throw away the default bundle we activated in the docker image, so we can
+# bundle the sidekiq dependencies instead
+export PATH=${PATH#/usr/local/bundle/bin:}
+unset BUNDLE_GEMFILE
+unset RUBYOPT
+
+if [ ! -d "tmp/sidekiq" ]; then
+  mkdir -p tmp
+  git clone https://github.com/mperham/sidekiq.git --branch v6.0.0 tmp/sidekiq
+fi
+
+cd tmp/sidekiq
+
+bundle
+bundle exec rake test

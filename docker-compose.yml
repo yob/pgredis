@@ -63,13 +63,13 @@ services:
       - "6379:6379"
 
   specs:
-    image: ruby:2.6.3
+    image: ruby:2.6.5-slim
     depends_on:
       - testserver
       - testredis
     volumes:
       - .:/work
-      - ruby-2.6.3-gem-cache:/usr/local/bundle
+      - ruby-2.6.5-gem-cache:/usr/local/bundle
       - ruby-tmp:/work/tmp
     working_dir: /work
     entrypoint: /work/scripts/bundle-exec
@@ -80,5 +80,5 @@ services:
 
 volumes:
   pgredis-mod: ~
-  ruby-2.6.3-gem-cache: ~
+  ruby-2.6.5-gem-cache: ~
   ruby-tmp: ~

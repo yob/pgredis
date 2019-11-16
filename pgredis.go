@@ -268,7 +268,7 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 
 			result, err := cmd.Execute(command, redis, tx)
 			if err != nil {
-				log.Print("ERROR: %s", err.Error())
+				log.Printf("ERROR: %s", err.Error())
 				newPgRedisError(err.Error()).writeTo(buffer)
 				break
 			}

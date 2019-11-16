@@ -96,17 +96,16 @@ func (repo *ListRepository) LeftRemove(tx *sql.Tx, key []byte, count int, value 
 	var removedCount int64
 	var maxIdx sql.NullInt64
 
-	// delete any expired rows in the db with this key
-	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	// take an exclusive lock for this key
+	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
 	_, err := tx.Exec(sqlStat, key)
 	if err != nil {
 		return 0, err
 	}
 
-	// now lock that key so no one else can change it
-	sqlStat = "SELECT key FROM redisdata WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL) FOR UPDATE"
+	// delete any expired rows in the db with this key
+	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
 	_, err = tx.Exec(sqlStat, key)
-
 	if err != nil {
 		return 0, err
 	}
@@ -148,17 +147,16 @@ func (repo *ListRepository) pop(tx *sql.Tx, key []byte, direction string) (bool,
 		return false, value, errors.New("direction must be left or right")
 	}
 
-	// delete any expired rows in the db with this key
-	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	// take an exclusive lock for this key
+	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
 	_, err := tx.Exec(sqlStat, key)
 	if err != nil {
 		return false, value, err
 	}
 
-	// now lock that key so no one else can change it
-	sqlStat = "SELECT key FROM redisdata WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL) FOR UPDATE"
+	// delete any expired rows in the db with this key
+	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
 	_, err = tx.Exec(sqlStat, key)
-
 	if err != nil {
 		return false, value, err
 	}

@@ -58,13 +58,20 @@ func (repo *StringRepository) Get(tx *sql.Tx, key []byte) (bool, RedisString, er
 }
 
 func (repo *StringRepository) InsertOrUpdate(tx *sql.Tx, key []byte, value []byte, expiry_millis int) (err error) {
+	// take an exclusive lock for this key
+	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
+	_, err = tx.Exec(sqlStat, key)
+	if err != nil {
+		return err
+	}
+
 	// TODO consider merging this into InsertOrUpdateMultiple. Insterting one thing is just a specical
 	// case of inserting many things
 	if expiry_millis == 0 {
-		sqlStat := "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, NULL) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = NULL"
+		sqlStat = "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, NULL) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = NULL"
 		_, err = tx.Exec(sqlStat, key, value)
 	} else {
-		sqlStat := "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, now() + cast($3 as interval)) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = EXCLUDED.expires_at"
+		sqlStat = "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, now() + cast($3 as interval)) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = EXCLUDED.expires_at"
 		interval := fmt.Sprintf("%d milliseconds", expiry_millis)
 		_, err = tx.Exec(sqlStat, key, value, interval)
 	}
@@ -75,9 +82,17 @@ func (repo *StringRepository) InsertOrUpdate(tx *sql.Tx, key []byte, value []byt
 }
 
 func (repo *StringRepository) InsertOrUpdateMultiple(tx *sql.Tx, items map[string]string) (err error) {
+
 	for key, value := range items {
+		// take an exclusive lock for this key
+		sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
+		_, err = tx.Exec(sqlStat, key)
+		if err != nil {
+			return err
+		}
+
 		// TODO could we do this in a single SQL statement?
-		sqlStat := "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, NULL) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = NULL"
+		sqlStat = "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, NULL) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = NULL"
 		_, err = tx.Exec(sqlStat, key, value)
 		if err != nil {
 			return err
@@ -89,8 +104,15 @@ func (repo *StringRepository) InsertOrUpdateMultiple(tx *sql.Tx, items map[strin
 
 func (repo *StringRepository) InsertOrSkip(tx *sql.Tx, key []byte, value []byte, expiry_millis int) (inserted bool, err error) {
 
+	// take an exclusive lock for this key
+	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
+	_, err = tx.Exec(sqlStat, key)
+	if err != nil {
+		return false, err
+	}
+
 	// delete any expired rows in the db with this key
-	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
 	_, err = tx.Exec(sqlStat, key)
 	if err != nil {
 		return false, err
@@ -118,8 +140,15 @@ func (repo *StringRepository) InsertOrSkip(tx *sql.Tx, key []byte, value []byte,
 
 func (repo *StringRepository) UpdateOrSkip(tx *sql.Tx, key []byte, value []byte, expiry_millis int) (updated bool, err error) {
 
+	// take an exclusive lock for this key
+	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
+	_, err = tx.Exec(sqlStat, key)
+	if err != nil {
+		return false, err
+	}
+
 	// delete any expired rows in the db with this key
-	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
 	_, err = tx.Exec(sqlStat, key)
 	if err != nil {
 		return false, err
@@ -148,9 +177,16 @@ func (repo *StringRepository) UpdateOrSkip(tx *sql.Tx, key []byte, value []byte,
 func (repo *StringRepository) InsertOrAppend(tx *sql.Tx, key []byte, value []byte) ([]byte, error) {
 	var finalValue []byte
 
-	// delete any expired rows in the db with this key
-	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	// take an exclusive lock for this key
+	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
 	_, err := tx.Exec(sqlStat, key)
+	if err != nil {
+		return finalValue, err
+	}
+
+	// delete any expired rows in the db with this key
+	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	_, err = tx.Exec(sqlStat, key)
 	if err != nil {
 		return nil, err
 	}
@@ -167,8 +203,15 @@ func (repo *StringRepository) InsertOrAppend(tx *sql.Tx, key []byte, value []byt
 func (repo *StringRepository) Incr(tx *sql.Tx, key []byte, by int) ([]byte, error) {
 	var finalValue []byte
 
-	sqlStat := "INSERT INTO redisdata(key, type, value) VALUES ($1, 'string', $2) ON CONFLICT (key) DO UPDATE SET type='string', value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as integer)+$4)::text)::bytea END , expires_at = NULL RETURNING value"
-	err := tx.QueryRow(sqlStat, key, by, by, by).Scan(&finalValue)
+	// take an exclusive lock for this key
+	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
+	_, err := tx.Exec(sqlStat, key)
+	if err != nil {
+		return finalValue, err
+	}
+
+	sqlStat = "INSERT INTO redisdata(key, type, value) VALUES ($1, 'string', $2) ON CONFLICT (key) DO UPDATE SET type='string', value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as integer)+$4)::text)::bytea END , expires_at = NULL RETURNING value"
+	err = tx.QueryRow(sqlStat, key, by, by, by).Scan(&finalValue)
 	if err != nil {
 		return nil, err
 	}
@@ -178,8 +221,15 @@ func (repo *StringRepository) Incr(tx *sql.Tx, key []byte, by int) ([]byte, erro
 func (repo *StringRepository) IncrDecimal(tx *sql.Tx, key []byte, by float64) ([]byte, error) {
 	var finalValue []byte
 
-	sqlStat := "INSERT INTO redisdata(key, type, value) VALUES ($1, 'string', $2) ON CONFLICT (key) DO UPDATE SET type='string', value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as decimal)+$4)::text)::bytea END, expires_at = NULL RETURNING value"
-	err := tx.QueryRow(sqlStat, key, by, by, by).Scan(&finalValue)
+	// take an exclusive lock for this key
+	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
+	_, err := tx.Exec(sqlStat, key)
+	if err != nil {
+		return finalValue, err
+	}
+
+	sqlStat = "INSERT INTO redisdata(key, type, value) VALUES ($1, 'string', $2) ON CONFLICT (key) DO UPDATE SET type='string', value = CASE WHEN redisdata.expires_at < now() THEN $3 ELSE ((cast(encode(redisdata.value,'escape') as decimal)+$4)::text)::bytea END, expires_at = NULL RETURNING value"
+	err = tx.QueryRow(sqlStat, key, by, by, by).Scan(&finalValue)
 	if err != nil {
 		return nil, err
 	}

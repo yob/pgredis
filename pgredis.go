@@ -36,7 +36,6 @@ func NewPgRedis(connStr string, maxConnections int) *PgRedis {
 		panic(err)
 	}
 
-
 	db.SetMaxOpenConns(maxConnections)
 
 	printDbStats(db)

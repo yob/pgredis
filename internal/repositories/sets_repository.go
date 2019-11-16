@@ -13,9 +13,16 @@ func NewSetRepository() *SetRepository {
 func (repo *SetRepository) Add(tx *sql.Tx, key []byte, values [][]byte) (updated int64, err error) {
 	count := int64(0)
 
+	// take an exclusive lock for this key
+	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
+	_, err = tx.Exec(sqlStat, key)
+	if err != nil {
+		return 0, err
+	}
+
 	// delete any expired rows in the db with this key
 	// we do this first so the count we return at the end doesn't include these rows
-	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
 	_, err = tx.Exec(sqlStat, key)
 	if err != nil {
 		return 0, err
@@ -23,14 +30,6 @@ func (repo *SetRepository) Add(tx *sql.Tx, key []byte, values [][]byte) (updated
 
 	// ensure the db has a current key
 	sqlStat = "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'set', '', NULL) ON CONFLICT (key) DO NOTHING"
-	_, err = tx.Exec(sqlStat, key)
-
-	if err != nil {
-		return 0, err
-	}
-
-	// now lock that key so no one else can change it
-	sqlStat = "SELECT key FROM redisdata WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL) FOR UPDATE"
 	_, err = tx.Exec(sqlStat, key)
 
 	if err != nil {
@@ -60,23 +59,18 @@ func (repo *SetRepository) Cardinality(tx *sql.Tx, key []byte) (count int64, err
 }
 
 func (repo *SetRepository) Remove(tx *sql.Tx, key []byte, values [][]byte) (count int64, err error) {
-	var lockedKey string
-
-	// delete any expired rows in the db with this key
-	// we do this first so the count we return at the end doesn't include these rows
-	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	// take an exclusive lock for this key
+	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
 	_, err = tx.Exec(sqlStat, key)
 	if err != nil {
 		return 0, err
 	}
 
-	// now lock that key so no one else can change it
-	sqlStat = "SELECT key FROM redisdata WHERE redisdata.key = $1 AND (redisdata.expires_at > now() OR expires_at IS NULL) FOR UPDATE"
-	err = tx.QueryRow(sqlStat, key).Scan(&lockedKey)
-
-	if err == sql.ErrNoRows {
-		return 0, nil
-	} else if err != nil {
+	// delete any expired rows in the db with this key
+	// we do this first so the count we return at the end doesn't include these rows
+	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	_, err = tx.Exec(sqlStat, key)
+	if err != nil {
 		return 0, err
 	}
 

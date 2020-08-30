@@ -282,8 +282,7 @@ func (cmd *msetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 	for i := 1; i < command.ArgCount(); i += 2 {
 		items[string(command.Get(i))] = string(command.Get(i + 1))
 	}
-	expiry_millis := 0 // does not expire
-	err := redis.strings.InsertOrUpdateMultiple(tx, items, expiry_millis)
+	err := redis.strings.InsertOrUpdateMultiple(tx, items)
 	if err != nil {
 		return nil, err
 	}

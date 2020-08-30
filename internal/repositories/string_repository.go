@@ -3,6 +3,7 @@ package repositories
 import (
 	"database/sql"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/lib/pq"
@@ -82,17 +83,26 @@ func (repo *StringRepository) InsertOrUpdate(tx *sql.Tx, key []byte, value []byt
 }
 
 func (repo *StringRepository) InsertOrUpdateMultiple(tx *sql.Tx, items map[string]string) (err error) {
+	keys := make([]string, len(items))
 
-	for key, value := range items {
-		// take an exclusive lock for this key
+	// take an exclusive lock for each key, in sorted order to avoid deadlocks
+	for key, _ := range items {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
 		sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
 		_, err = tx.Exec(sqlStat, key)
 		if err != nil {
 			return err
 		}
+	}
 
+	// with deadlock-avoiding sorted locks in plac, now it's safe to modify
+	// values in user-provided order
+	for key, value := range items {
 		// TODO could we do this in a single SQL statement?
-		sqlStat = "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, NULL) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = NULL"
+		sqlStat := "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, NULL) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = NULL"
 		_, err = tx.Exec(sqlStat, key, value)
 		if err != nil {
 			return err

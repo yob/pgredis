@@ -12,12 +12,12 @@ unset BUNDLE_GEMFILE
 unset RUBYOPT
 
 if [ ! -d "tmp/sidekiq" ]; then
-  apt-get update && apt-get install -y git build-essential libsqlite3-dev
+  apt-get update && apt-get install -y git
   mkdir -p tmp
   git clone https://github.com/mperham/sidekiq.git --branch v6.0.0 tmp/sidekiq
 fi
 
-apt-get update && apt-get install -y git libsqlite3-0
+apt-get update && apt-get install -y git build-essential libsqlite3-dev libxml2-dev libsqlite3-0 libxml2 libxslt1.1
 
 cd tmp/sidekiq
 

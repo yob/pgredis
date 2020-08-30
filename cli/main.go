@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 	"github.com/yob/pgredis"
 )
 
@@ -23,32 +23,32 @@ func main() {
 	app.Usage = "Redis in front, postgresql out back"
 	app.Version = "dev"
 
-	app.Commands = []cli.Command{
+	app.Commands = []*cli.Command{
 		{
 			Name:  "server",
 			Usage: "start the pgredis server",
 			Flags: []cli.Flag{
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:  "bind, b",
 					Usage: "IP address to listen on",
 					Value: "0.0.0.0",
 				},
-				cli.IntFlag{
+				&cli.IntFlag{
 					Name:  "port, p",
 					Usage: "the port to listen on",
 					Value: 6379,
 				},
-				cli.StringFlag{
+				&cli.StringFlag{
 					Name:     "database",
 					Usage:    "the database connection details (eg. postgres://user:pass@host/dbname?sslmode=disable)",
-					EnvVar:   "DATABASE_URL",
+					EnvVars:  []string{"DATABASE_URL"},
 					Required: true,
 				},
-				cli.IntFlag{
-					Name:   "max-connections",
-					Usage:  "the maximum number of database connections to open",
-					EnvVar: "MAX_CONNECTIONS",
-					Value:  25,
+				&cli.IntFlag{
+					Name:    "max-connections",
+					Usage:   "the maximum number of database connections to open",
+					EnvVars: []string{"MAX_CONNECTIONS"},
+					Value:   25,
 				},
 			},
 			Action: func(ctx *cli.Context) error {

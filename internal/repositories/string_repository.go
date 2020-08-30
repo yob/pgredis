@@ -59,30 +59,12 @@ func (repo *StringRepository) Get(tx *sql.Tx, key []byte) (bool, RedisString, er
 }
 
 func (repo *StringRepository) InsertOrUpdate(tx *sql.Tx, key []byte, value []byte, expiry_millis int) (err error) {
-	// take an exclusive lock for this key
-	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
-	_, err = tx.Exec(sqlStat, key)
-	if err != nil {
-		return err
-	}
-
-	// TODO consider merging this into InsertOrUpdateMultiple. Insterting one thing is just a specical
-	// case of inserting many things
-	if expiry_millis == 0 {
-		sqlStat = "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, NULL) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = NULL"
-		_, err = tx.Exec(sqlStat, key, value)
-	} else {
-		sqlStat = "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, now() + cast($3 as interval)) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = EXCLUDED.expires_at"
-		interval := fmt.Sprintf("%d milliseconds", expiry_millis)
-		_, err = tx.Exec(sqlStat, key, value, interval)
-	}
-	if err != nil {
-		return err
-	}
-	return nil
+	items := make(map[string]string)
+	items[string(key)] = string(value)
+	return repo.InsertOrUpdateMultiple(tx, items, expiry_millis)
 }
 
-func (repo *StringRepository) InsertOrUpdateMultiple(tx *sql.Tx, items map[string]string) (err error) {
+func (repo *StringRepository) InsertOrUpdateMultiple(tx *sql.Tx, items map[string]string, expiry_millis int) (err error) {
 	keys := make([]string, len(items))
 
 	// take an exclusive lock for each key, in sorted order to avoid deadlocks
@@ -101,9 +83,14 @@ func (repo *StringRepository) InsertOrUpdateMultiple(tx *sql.Tx, items map[strin
 	// with deadlock-avoiding sorted locks in plac, now it's safe to modify
 	// values in user-provided order
 	for key, value := range items {
-		// TODO could we do this in a single SQL statement?
-		sqlStat := "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, NULL) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = NULL"
-		_, err = tx.Exec(sqlStat, key, value)
+		if expiry_millis == 0 {
+			sqlStat := "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, NULL) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = NULL"
+			_, err = tx.Exec(sqlStat, key, value)
+		} else {
+			sqlStat := "INSERT INTO redisdata(key, type, value, expires_at) VALUES ($1, 'string', $2, now() + cast($3 as interval)) ON CONFLICT (key) DO UPDATE SET type='string', value = EXCLUDED.value, expires_at = EXCLUDED.expires_at"
+			interval := fmt.Sprintf("%d milliseconds", expiry_millis)
+			_, err = tx.Exec(sqlStat, key, value, interval)
+		}
 		if err != nil {
 			return err
 		}

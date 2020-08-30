@@ -28,7 +28,7 @@ services:
     command: ["psql"]
 
   dev:
-    image: golang:1.13.4-buster
+    image: golang:1.15.0-buster
     depends_on:
       - db
     volumes:
@@ -43,7 +43,7 @@ services:
       DATABASE_URL: "postgres://pgredis:fnord@db/pgredis?sslmode=disable"
 
   testserver:
-    image: golang:1.13.4-buster
+    image: golang:1.15.0-buster
     depends_on:
       - testdb
     volumes:
@@ -63,13 +63,13 @@ services:
       - "6379:6379"
 
   specs:
-    image: ruby:2.6.5-slim
+    image: ruby:2.7.1-slim
     depends_on:
       - testserver
       - testredis
     volumes:
       - .:/work
-      - ruby-2.6.5-gem-cache:/usr/local/bundle
+      - ruby-2.7.1-gem-cache:/usr/local/bundle
       - ruby-tmp:/work/tmp
     working_dir: /work
     entrypoint: /work/scripts/bundle-exec
@@ -80,5 +80,5 @@ services:
 
 volumes:
   pgredis-mod: ~
-  ruby-2.6.5-gem-cache: ~
+  ruby-2.7.1-gem-cache: ~
   ruby-tmp: ~

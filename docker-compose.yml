@@ -28,7 +28,7 @@ services:
     command: ["psql"]
 
   dev:
-    image: golang:1.15.0-buster
+    image: golang:1.15.3-buster
     depends_on:
       - db
     volumes:

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -142,7 +143,7 @@ func openDatabaseWithRetries(connStr string, retries int) (*sql.DB, error) {
 }
 
 func (redis *PgRedis) StartServer(bindAddress string, port int) error {
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", bindAddress, port))
+	listener, err := net.Listen("tcp", net.JoinHostPort(bindAddress, strconv.Itoa(port)))
 	if err != nil {
 		panic(err)
 	}

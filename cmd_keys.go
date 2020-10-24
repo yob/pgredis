@@ -4,13 +4,11 @@ import (
 	"database/sql"
 	"log"
 	"strconv"
-
-	"github.com/secmask/go-redisproto"
 )
 
 type delCommand struct{}
 
-func (cmd *delCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *delCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	result := int64(0)
 	for i := 1; i < command.ArgCount(); i++ {
 		// TODO calling Delete in a loop like this returns the correct result, but is super
@@ -28,7 +26,7 @@ func (cmd *delCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *
 
 type existsCommand struct{}
 
-func (cmd *existsCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *existsCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	result := int64(0)
 	for i := 1; i < command.ArgCount(); i++ {
 		success, err := redis.keys.Exist(tx, command.Get(i))
@@ -44,7 +42,7 @@ func (cmd *existsCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 
 type expireCommand struct{}
 
-func (cmd *expireCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *expireCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	seconds, _ := strconv.Atoi(string(command.Get(2)))
 
@@ -62,7 +60,7 @@ func (cmd *expireCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 
 type pttlCommand struct{}
 
-func (cmd *pttlCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *pttlCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	// this should probably use KeyRepository and not be string specific
 	keyExists, millis, err := redis.keys.TTLInMillis(tx, key)
@@ -80,7 +78,7 @@ func (cmd *pttlCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 
 type ttlCommand struct{}
 
-func (cmd *ttlCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *ttlCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	// this should probably use KeyRepository and not be string specific
 	success, resp, err := redis.strings.Get(tx, key)
@@ -98,7 +96,7 @@ func (cmd *ttlCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *
 
 type typeCommand struct{}
 
-func (cmd *typeCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *typeCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	result, err := redis.keys.Type(tx, key)
 	if err != nil {

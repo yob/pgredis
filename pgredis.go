@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 	"strconv"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -15,6 +14,10 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/secmask/go-redisproto"
+)
+
+const (
+	MAX_COMMAND_QUEUE_SIZE = 100
 )
 
 type PgRedis struct {
@@ -201,149 +204,168 @@ func (redis *PgRedis) handleConnection(conn net.Conn) {
 	parser := redisproto.NewParser(conn)
 	buffer := bufio.NewWriter(conn)
 	writer := redisproto.NewWriter(buffer)
-	var ew error
-	var tx *sql.Tx
-	var txerr error
-	var multiResponses = []pgRedisValue{}
-	mode := "single"
-	defer func() {
-		if tx != nil {
-			tx.Rollback()
-		}
-	}()
+	var requestQueue = []redisRequest{}
 	for {
 		command, err := parser.ReadCommand()
 		if err != nil {
 			_, ok := err.(*redisproto.ProtocolError)
 			if ok {
-				ew = writer.WriteError(err.Error())
+				writer.WriteError(err.Error())
 			} else {
 				log.Println(err, " closed connection to ", conn.RemoteAddr())
 				break
 			}
 		}
-		cmdString := strings.ToUpper(string(command.Get(0)))
-		if cmdString == "MULTI" {
-			log.Printf("command=MULTI\n")
-			mode = "multi"
-			multiResponses = make([]pgRedisValue, 0)
+		requestQueue = append(requestQueue, newRequestFromRedisProto(command))
 
-			// start a db transaction
-			tx, txerr = redis.db.Begin()
-			if txerr != nil {
-				ew = writer.WriteError(txerr.Error())
-			}
-			_, err = tx.Exec("SET statement_timeout = 5000")
-			if err != nil {
-				log.Printf("Error setting statement timeout")
-				break
-			}
-			_, err = tx.Exec("SET lock_timeout = 5000")
-			if err != nil {
-				log.Printf("Error setting lock timeout")
-				break
-			}
-			log.Printf("opened MULTi transaction, sending OK\n")
+		lastRequest := requestQueue[len(requestQueue)-1]
+		lastRequestCmd := lastRequest.CommandString()
+		firstRequest := requestQueue[0]
+		firstRequestCmd := firstRequest.CommandString()
+
+		if len(requestQueue) > MAX_COMMAND_QUEUE_SIZE {
+			writer.WriteError(fmt.Sprintf("Max command queue size (%d) exceeded", MAX_COMMAND_QUEUE_SIZE))
+			writer.Flush()
+			requestQueue = []redisRequest{}
+		} else if lastRequestCmd == "DISCARD" {
 			writer.WriteSimpleString("OK")
 			writer.Flush()
-		}
-		if mode == "single" {
-			cmd := redis.selectCmd(cmdString)
-
-			// start a db transaction
-			tx, txerr := redis.db.Begin()
-			if txerr != nil {
-				ew = writer.WriteError(txerr.Error())
-			}
-			_, err = tx.Exec("SET statement_timeout = 5000")
-			if err != nil {
-				log.Printf("Error setting statement timeout")
+			requestQueue = []redisRequest{}
+		} else if len(requestQueue) == 1 && lastRequestCmd == "MULTI" {
+			writer.WriteSimpleString("OK")
+			writer.Flush()
+		} else if lastRequestCmd == "EXEC" && firstRequestCmd != "MULTI" {
+			writer.WriteError("EXEC without MULTI")
+			writer.Flush()
+			requestQueue = []redisRequest{}
+		} else if len(requestQueue) == 1 {
+			ok := redis.executeSingleCommand(requestQueue[0], buffer)
+			writer.Flush()
+			requestQueue = []redisRequest{}
+			if !ok {
 				break
 			}
-			_, err = tx.Exec("SET lock_timeout = 5000")
-			if err != nil {
-				log.Printf("Error setting lock timeout")
+		} else if len(requestQueue) > 1 && firstRequestCmd == "MULTI" && lastRequestCmd != "EXEC" {
+			writer.WriteSimpleString("QUEUED")
+			writer.Flush()
+		} else if len(requestQueue) > 1 && firstRequestCmd == "MULTI" && lastRequestCmd == "EXEC" {
+			ok := redis.executeMultiCommand(requestQueue[1:len(requestQueue)-1], buffer)
+			writer.Flush()
+			requestQueue = []redisRequest{}
+			if !ok {
 				break
-			}
-
-			result, err := cmd.Execute(command, redis, tx)
-			if err != nil {
-				log.Printf("ERROR: %s", err.Error())
-				newPgRedisError(err.Error()).writeTo(buffer)
-				break
-			}
-			ew = result.writeTo(buffer)
-			if ew != nil {
-				// this should be rare, there's no much that can go wrong when writing to an in memory buffer
-				log.Println("Error during command execution, connection closed", ew)
-				break
-			}
-
-			buffer.Flush()
-
-			txerr = tx.Commit()
-			if txerr != nil {
-				ew = writer.WriteError(txerr.Error())
 			}
 		} else {
-			log.Printf("MULTI command execution: %s\n", cmdString)
-			if cmdString != "MULTI" && cmdString != "EXEC" && cmdString != "DISCARD" {
-				cmd := redis.selectCmd(cmdString)
-				result, err := cmd.Execute(command, redis, tx)
-				if err != nil {
-					log.Print("ERROR: %s", err.Error())
-					newPgRedisError(err.Error()).writeTo(buffer)
-					break
-				}
-				multiResponses = append(multiResponses, result)
-				writer.WriteSimpleString("QUEUED")
-				writer.Flush()
-			}
-		}
-
-		if cmdString == "DISCARD" {
-			if mode == "multi" {
-				txerr = tx.Rollback()
-				if txerr != nil {
-					ew = writer.WriteError(txerr.Error())
-				}
-				writer.WriteSimpleString("OK")
-				writer.Flush()
-				multiResponses = make([]pgRedisValue, 0)
-				mode = "single"
-			} else {
-				ew = writer.WriteError("DISCARD without MULTI")
-			}
-		} else if cmdString == "EXEC" {
-			if mode == "multi" {
-				log.Printf("about to process EXEC\n")
-				txerr = tx.Commit()
-				if txerr != nil {
-					ew = writer.WriteError(txerr.Error())
-				}
-				redisArray := newPgRedisArray(multiResponses)
-				err = redisArray.writeTo(buffer)
-				if err != nil {
-					newPgRedisError(err.Error()).writeTo(buffer)
-					break
-				}
-				buffer.Flush()
-				multiResponses = make([]pgRedisValue, 0)
-				mode = "single"
-			} else {
-				ew = writer.WriteError("EXEC without MULTI")
-			}
-		}
-		if cmdString == "QUIT" {
-			break
-		}
-		if ew != nil {
-			log.Println("Connection closed", ew)
-			break
+			writer.WriteError("Unrecognised command sequence")
+			requestQueue = []redisRequest{}
 		}
 	}
 	// ensure everything is written to the socket before we close it
 	buffer.Flush()
+}
+
+func (redis *PgRedis) executeSingleCommand(request redisRequest, buffer *bufio.Writer) bool {
+	// start a db transaction
+	tx, txerr := redis.db.Begin()
+	if txerr != nil {
+		newPgRedisError(txerr.Error()).writeTo(buffer)
+		return false
+	}
+	defer tx.Rollback()
+
+	_, err := tx.Exec("SET statement_timeout = 5000")
+	if err != nil {
+		newPgRedisError("Error setting statement timeout").writeTo(buffer)
+		return false
+	}
+	_, err = tx.Exec("SET lock_timeout = 5000")
+	if err != nil {
+		newPgRedisError("Error setting lock timeout").writeTo(buffer)
+		return false
+	}
+
+	cmdObject := redis.selectCmd(request.CommandString())
+
+	result, err := cmdObject.Execute(&request, redis, tx)
+	if err != nil {
+		newPgRedisError(err.Error()).writeTo(buffer)
+		return false
+	}
+
+	ew := result.writeTo(buffer)
+	if ew != nil {
+		// this should be rare, there's no much that can go wrong when writing to an in memory buffer
+		newPgRedisError(fmt.Sprintf("Error during command execution, connection closed: %s", ew)).writeTo(buffer)
+
+		// we may not be able to write to the client, so also log on the server
+		log.Println("Error during command execution, connection closed", ew)
+		return false
+	}
+
+	buffer.Flush()
+
+	txerr = tx.Commit()
+	if txerr != nil {
+		newPgRedisError(txerr.Error()).writeTo(buffer)
+		return false
+	}
+
+	return true
+}
+
+func (redis *PgRedis) executeMultiCommand(requestQueue []redisRequest, buffer *bufio.Writer) bool {
+	log.Println("execute single command")
+
+	// start a db transaction
+	tx, txerr := redis.db.Begin()
+	if txerr != nil {
+		newPgRedisError(txerr.Error()).writeTo(buffer)
+		return false
+	}
+	defer tx.Rollback()
+
+	_, err := tx.Exec("SET statement_timeout = 5000")
+	if err != nil {
+		newPgRedisError("Error setting statement timeout").writeTo(buffer)
+		return false
+	}
+	_, err = tx.Exec("SET lock_timeout = 5000")
+	if err != nil {
+		newPgRedisError("Error setting lock timeout").writeTo(buffer)
+		return false
+	}
+
+	multiResponses := []pgRedisValue{}
+	for _, nextRequest := range requestQueue {
+		cmdObject := redis.selectCmd(nextRequest.CommandString())
+		result, err := cmdObject.Execute(&nextRequest, redis, tx)
+		if err != nil {
+			newPgRedisError(err.Error()).writeTo(buffer)
+			return false
+		}
+		multiResponses = append(multiResponses, result)
+
+		buffer.Flush()
+	}
+
+	// a multi command was executed
+	redisArray := newPgRedisArray(multiResponses)
+	err = redisArray.writeTo(buffer)
+	if err != nil {
+		newPgRedisError(fmt.Sprintf("Error during command execution, connection closed: %s", err)).writeTo(buffer)
+
+		// we may not be able to write to the client, so also log on the server
+		log.Println("Error during command execution, connection closed", err)
+		return false
+	}
+
+	txerr = tx.Commit()
+	if txerr != nil {
+		newPgRedisError(txerr.Error()).writeTo(buffer)
+		return false
+	}
+
+	return true
 }
 
 func printDbStats(db *sql.DB) {

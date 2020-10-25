@@ -2,19 +2,18 @@ package pgredis
 
 import (
 	"database/sql"
-	"github.com/secmask/go-redisproto"
 )
 
 type echoCommand struct{}
 
-func (cmd *echoCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *echoCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	arg := command.Get(1)
 	return newPgRedisString(string(arg)), nil
 }
 
 type pingCommand struct{}
 
-func (cmd *pingCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *pingCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	arg := command.Get(1)
 	if len(arg) == 0 {
 		return newPgRedisString("PONG"), nil
@@ -25,12 +24,12 @@ func (cmd *pingCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 
 type quitCommand struct{}
 
-func (cmd *quitCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *quitCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	return newPgRedisString("OK"), nil
 }
 
 type selectCommand struct{}
 
-func (cmd *selectCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *selectCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	return newPgRedisString("OK"), nil
 }

@@ -7,12 +7,11 @@ import (
 	"strconv"
 
 	"github.com/32bitkid/bitreader"
-	"github.com/secmask/go-redisproto"
 )
 
 type appendCommand struct{}
 
-func (cmd *appendCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *appendCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	value := command.Get(2)
 	newValue, err := redis.strings.InsertOrAppend(tx, key, value)
@@ -36,7 +35,7 @@ func intOrZero(value string) int {
 	}
 }
 
-func (cmd *bitcountCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *bitcountCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	success, result, err := redis.strings.Get(tx, key)
 
@@ -93,7 +92,7 @@ func (cmd *bitcountCommand) Execute(command *redisproto.Command, redis *PgRedis,
 
 type decrCommand struct{}
 
-func (cmd *decrCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *decrCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	newValue, err := redis.strings.Incr(tx, key, -1)
 	if err != nil {
@@ -105,7 +104,7 @@ func (cmd *decrCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 
 type decrbyCommand struct{}
 
-func (cmd *decrbyCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *decrbyCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	by, _ := strconv.Atoi(string(command.Get(2)))
 	newValue, err := redis.strings.Incr(tx, key, by*-1)
@@ -118,7 +117,7 @@ func (cmd *decrbyCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 
 type getCommand struct{}
 
-func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *getCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	success, resp, err := redis.strings.Get(tx, command.Get(1))
 	if err != nil {
 		return nil, err
@@ -132,7 +131,7 @@ func (cmd *getCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *
 
 type getbitCommand struct{}
 
-func (cmd *getbitCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *getbitCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	success, resp, err := redis.strings.Get(tx, command.Get(1))
 	bitPosition, _ := strconv.Atoi(string(command.Get(2)))
 
@@ -161,7 +160,7 @@ func (cmd *getbitCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 
 type getsetCommand struct{}
 
-func (cmd *getsetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *getsetCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	expiry_millis := 0
 	getSuccess, resp, err := redis.strings.Get(tx, command.Get(1))
 
@@ -182,7 +181,7 @@ func (cmd *getsetCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 
 type getrangeCommand struct{}
 
-func (cmd *getrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *getrangeCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	success, result, err := redis.strings.Get(tx, command.Get(1))
 	if err != nil {
 		return nil, err
@@ -221,7 +220,7 @@ func (cmd *getrangeCommand) Execute(command *redisproto.Command, redis *PgRedis,
 
 type incrCommand struct{}
 
-func (cmd *incrCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *incrCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	newValue, err := redis.strings.Incr(tx, key, 1)
 	if err != nil {
@@ -233,7 +232,7 @@ func (cmd *incrCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 
 type incrbyCommand struct{}
 
-func (cmd *incrbyCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *incrbyCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	by, _ := strconv.Atoi(string(command.Get(2)))
 	newValue, err := redis.strings.Incr(tx, key, by)
@@ -246,7 +245,7 @@ func (cmd *incrbyCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 
 type incrbyfloatCommand struct{}
 
-func (cmd *incrbyfloatCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *incrbyfloatCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	by, _ := strconv.ParseFloat(string(command.Get(2)), 64)
 	newValue, err := redis.strings.IncrDecimal(tx, key, by)
@@ -258,7 +257,7 @@ func (cmd *incrbyfloatCommand) Execute(command *redisproto.Command, redis *PgRed
 
 type mgetCommand struct{}
 
-func (cmd *mgetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *mgetCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	result := make([]pgRedisValue, command.ArgCount()-1)
 	for i := 1; i < command.ArgCount(); i++ {
 		// TODO calling getStrings in a loop like this returns the correct result, but is super
@@ -275,7 +274,7 @@ func (cmd *mgetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 
 type msetCommand struct{}
 
-func (cmd *msetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *msetCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	// TODO Using string because I can't use byte slices as a map key, but this probably breaks
 	// some compatibility with redis
 	items := make(map[string]string)
@@ -291,7 +290,7 @@ func (cmd *msetCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 
 type setCommand struct{}
 
-func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *setCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	expiry_millis := 0
 	exValue := commandExValueInMillis(command)
 	if exValue > 0 {
@@ -335,7 +334,7 @@ func (cmd *setCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *
 
 type setexCommand struct{}
 
-func (cmd *setexCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *setexCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	expiry_secs, _ := strconv.Atoi(string(command.Get(2)))
 	value := command.Get(3)
@@ -350,7 +349,7 @@ func (cmd *setexCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 
 type psetexCommand struct{}
 
-func (cmd *psetexCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *psetexCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	expiry_millis, _ := strconv.Atoi(string(command.Get(2)))
 	value := command.Get(3)
@@ -363,7 +362,7 @@ func (cmd *psetexCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 
 type setnxCommand struct{}
 
-func (cmd *setnxCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *setnxCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	value := command.Get(2)
 	expiry_millis := 0
@@ -381,7 +380,7 @@ func (cmd *setnxCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 
 type strlenCommand struct{}
 
-func (cmd *strlenCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *strlenCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	success, resp, err := redis.strings.Get(tx, command.Get(1))
 	if err != nil {
 		return nil, err
@@ -393,7 +392,7 @@ func (cmd *strlenCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 	}
 }
 
-func commandExValueInMillis(command *redisproto.Command) int {
+func commandExValueInMillis(command *redisRequest) int {
 	indexOfEx := indexOfValue(command, "EX")
 	if indexOfEx == 0 {
 		return 0
@@ -407,7 +406,7 @@ func commandExValueInMillis(command *redisproto.Command) int {
 	}
 }
 
-func commandPxValueInMillis(command *redisproto.Command) int {
+func commandPxValueInMillis(command *redisRequest) int {
 	indexOfPx := indexOfValue(command, "PX")
 	if indexOfPx == 0 {
 		return 0
@@ -421,7 +420,7 @@ func commandPxValueInMillis(command *redisproto.Command) int {
 	}
 }
 
-func indexOfValue(command *redisproto.Command, value string) int {
+func indexOfValue(command *redisRequest, value string) int {
 	for i := 1; i < command.ArgCount(); i++ {
 		if string(command.Get(i)) == value {
 			return i
@@ -430,7 +429,7 @@ func indexOfValue(command *redisproto.Command, value string) int {
 	return 0
 }
 
-func commandHasValue(command *redisproto.Command, value string) bool {
+func commandHasValue(command *redisRequest, value string) bool {
 	for i := 1; i < command.ArgCount(); i++ {
 		if string(command.Get(i)) == value {
 			return true

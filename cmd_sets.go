@@ -2,13 +2,11 @@ package pgredis
 
 import (
 	"database/sql"
-
-	"github.com/secmask/go-redisproto"
 )
 
 type saddCommand struct{}
 
-func (cmd *saddCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *saddCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	values := make([][]byte, 0)
 	for i := 2; i < command.ArgCount(); i++ {
@@ -24,7 +22,7 @@ func (cmd *saddCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 
 type scardCommand struct{}
 
-func (cmd *scardCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *scardCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 
 	count, err := redis.sets.Cardinality(tx, key)
@@ -36,7 +34,7 @@ func (cmd *scardCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 
 type sremCommand struct{}
 
-func (cmd *sremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *sremCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	values := make([][]byte, 0)
 	for i := 2; i < command.ArgCount(); i++ {
@@ -52,7 +50,7 @@ func (cmd *sremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 
 type smembersCommand struct{}
 
-func (cmd *smembersCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *smembersCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 
 	values, err := redis.sets.Members(tx, key)
@@ -64,7 +62,7 @@ func (cmd *smembersCommand) Execute(command *redisproto.Command, redis *PgRedis,
 
 type sscanCommand struct{}
 
-func (cmd *sscanCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *sscanCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 
 	values, err := redis.sets.Members(tx, key)

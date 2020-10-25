@@ -3,7 +3,6 @@ package pgredis
 import (
 	"database/sql"
 	"fmt"
-	"github.com/secmask/go-redisproto"
 	"strconv"
 	"time"
 )
@@ -12,7 +11,7 @@ type brpopCommand struct{}
 
 // TODO this sleeping approach might work, but it's lame. It'd be neat to use psql NOTIFY
 // to be informed when a list is ready to rpop
-func (cmd *brpopCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *brpopCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	listCount := command.ArgCount() - 2
 	listKeys := []string{}
 	for i := 1; i <= listCount; i++ {
@@ -41,7 +40,7 @@ func (cmd *brpopCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 
 type llenCommand struct{}
 
-func (cmd *llenCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *llenCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	length, err := redis.lists.Length(tx, key)
 	if err != nil {
@@ -52,7 +51,7 @@ func (cmd *llenCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 
 type lpopCommand struct{}
 
-func (cmd *lpopCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *lpopCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	success, value, err := redis.lists.LeftPop(tx, key)
 	if err != nil {
@@ -67,7 +66,7 @@ func (cmd *lpopCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 
 type lpushCommand struct{}
 
-func (cmd *lpushCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *lpushCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	values := make([][]byte, 0)
 	key := command.Get(1)
 	for i := 2; i < command.ArgCount(); i++ {
@@ -82,7 +81,7 @@ func (cmd *lpushCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 
 type lrangeCommand struct{}
 
-func (cmd *lrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *lrangeCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	start, _ := strconv.Atoi(string(command.Get(2)))
 	end, _ := strconv.Atoi(string(command.Get(3)))
@@ -96,7 +95,7 @@ func (cmd *lrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 
 type lremCommand struct{}
 
-func (cmd *lremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *lremCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	count, _ := strconv.Atoi(string(command.Get(2)))
 	value := command.Get(3)
@@ -109,7 +108,7 @@ func (cmd *lremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 
 type rpopCommand struct{}
 
-func (cmd *rpopCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *rpopCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	success, value, err := redis.lists.RightPop(tx, key)
 	if err != nil {
@@ -124,7 +123,7 @@ func (cmd *rpopCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 
 type rpushCommand struct{}
 
-func (cmd *rpushCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *rpushCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	values := make([][]byte, 0)
 	key := command.Get(1)
 	for i := 2; i < command.ArgCount(); i++ {

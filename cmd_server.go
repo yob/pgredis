@@ -4,13 +4,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/secmask/go-redisproto"
 	"strings"
 )
 
 type flushallCommand struct{}
 
-func (cmd *flushallCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *flushallCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	err := redis.keys.FlushAll(tx)
 	if err != nil {
 		return nil, err
@@ -20,7 +19,7 @@ func (cmd *flushallCommand) Execute(command *redisproto.Command, redis *PgRedis,
 
 type clientCommand struct{}
 
-func (cmd *clientCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *clientCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	subcommand := strings.ToUpper(string(command.Get(1)))
 	if subcommand == "SETNAME" {
 		return newPgRedisString("OK"), nil
@@ -31,7 +30,7 @@ func (cmd *clientCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 
 type dbsizeCommand struct{}
 
-func (cmd *dbsizeCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *dbsizeCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	count, err := redis.keys.Count(tx)
 	if err != nil {
 		return nil, err
@@ -41,7 +40,7 @@ func (cmd *dbsizeCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 
 type infoCommand struct{}
 
-func (cmd *infoCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *infoCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	result := make([]string, 0)
 	result = append(result, "# Server")
 	result = append(result, "redis_version:5.0.5")

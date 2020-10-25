@@ -5,13 +5,11 @@ import (
 	"errors"
 	"strconv"
 	"strings"
-
-	"github.com/secmask/go-redisproto"
 )
 
 type zaddCommand struct{}
 
-func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *zaddCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	xxArgProvided := false
 	nxArgProvided := false
 	chArgProvided := false
@@ -57,7 +55,7 @@ func (cmd *zaddCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 
 type zcardCommand struct{}
 
-func (cmd *zcardCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *zcardCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 
 	count, err := redis.sortedsets.Cardinality(tx, key)
@@ -69,7 +67,7 @@ func (cmd *zcardCommand) Execute(command *redisproto.Command, redis *PgRedis, tx
 
 type zrangeCommand struct{}
 
-func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *zrangeCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	start, _ := strconv.Atoi(string(command.Get(2)))
 	end, _ := strconv.Atoi(string(command.Get(3)))
@@ -84,7 +82,7 @@ func (cmd *zrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, t
 
 type zrangebyscoreCommand struct{}
 
-func (cmd *zrangebyscoreCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *zrangebyscoreCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	var min float64
 	var max float64
 	var minExclusive bool
@@ -125,7 +123,7 @@ func (cmd *zrangebyscoreCommand) Execute(command *redisproto.Command, redis *PgR
 
 type zremCommand struct{}
 
-func (cmd *zremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *zremCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	values := make([][]byte, 0)
 	for i := 2; i < command.ArgCount(); i++ {
@@ -142,7 +140,7 @@ func (cmd *zremCommand) Execute(command *redisproto.Command, redis *PgRedis, tx 
 
 type zremrangebyrankCommand struct{}
 
-func (cmd *zremrangebyrankCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *zremrangebyrankCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	start, _ := strconv.Atoi(string(command.Get(2)))
 	end, _ := strconv.Atoi(string(command.Get(3)))
@@ -157,7 +155,7 @@ func (cmd *zremrangebyrankCommand) Execute(command *redisproto.Command, redis *P
 
 type zremrangebyscoreCommand struct{}
 
-func (cmd *zremrangebyscoreCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *zremrangebyscoreCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	var min float64
 	var max float64
 	var minExclusive bool
@@ -193,7 +191,7 @@ func (cmd *zremrangebyscoreCommand) Execute(command *redisproto.Command, redis *
 
 type zrevrangeCommand struct{}
 
-func (cmd *zrevrangeCommand) Execute(command *redisproto.Command, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
+func (cmd *zrevrangeCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
 	key := command.Get(1)
 	start, _ := strconv.Atoi(string(command.Get(2)))
 	end, _ := strconv.Atoi(string(command.Get(3)))
@@ -206,7 +204,7 @@ func (cmd *zrevrangeCommand) Execute(command *redisproto.Command, redis *PgRedis
 	return newPgRedisArrayOfStrings(items), nil
 }
 
-func commandLimitOffsetAndCount(command *redisproto.Command) (int, int) {
+func commandLimitOffsetAndCount(command *redisRequest) (int, int) {
 	indexOfLimit := indexOfValue(command, "LIMIT")
 	if indexOfLimit == 0 {
 		return 0, 0

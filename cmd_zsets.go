@@ -53,6 +53,10 @@ func (cmd *zaddCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 	return newPgRedisInt(updated), nil
 }
 
+func (cmd *zaddCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
+}
+
 type zcardCommand struct{}
 
 func (cmd *zcardCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -63,6 +67,10 @@ func (cmd *zcardCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.
 		return nil, err
 	}
 	return newPgRedisInt(count), nil
+}
+
+func (cmd *zcardCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
 }
 
 type zrangeCommand struct{}
@@ -78,6 +86,10 @@ func (cmd *zrangeCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql
 		return nil, err
 	}
 	return newPgRedisArrayOfStrings(items), nil
+}
+
+func (cmd *zrangeCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
 }
 
 type zrangebyscoreCommand struct{}
@@ -121,6 +133,10 @@ func (cmd *zrangebyscoreCommand) Execute(command *redisRequest, redis *PgRedis, 
 	return newPgRedisArrayOfStrings(items), nil
 }
 
+func (cmd *zrangebyscoreCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
+}
+
 type zremCommand struct{}
 
 func (cmd *zremCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -138,6 +154,10 @@ func (cmd *zremCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 	return newPgRedisInt(updated), nil
 }
 
+func (cmd *zremCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
+}
+
 type zremrangebyrankCommand struct{}
 
 func (cmd *zremrangebyrankCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -151,6 +171,10 @@ func (cmd *zremrangebyrankCommand) Execute(command *redisRequest, redis *PgRedis
 	}
 
 	return newPgRedisInt(removed), nil
+}
+
+func (cmd *zremrangebyrankCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
 }
 
 type zremrangebyscoreCommand struct{}
@@ -189,6 +213,10 @@ func (cmd *zremrangebyscoreCommand) Execute(command *redisRequest, redis *PgRedi
 	return newPgRedisInt(removed), nil
 }
 
+func (cmd *zremrangebyscoreCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
+}
+
 type zrevrangeCommand struct{}
 
 func (cmd *zrevrangeCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -202,6 +230,10 @@ func (cmd *zrevrangeCommand) Execute(command *redisRequest, redis *PgRedis, tx *
 		return nil, err
 	}
 	return newPgRedisArrayOfStrings(items), nil
+}
+
+func (cmd *zrevrangeCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
 }
 
 func commandLimitOffsetAndCount(command *redisRequest) (int, int) {

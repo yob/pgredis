@@ -286,6 +286,13 @@ func (redis *PgRedis) executeSingleCommand(request redisRequest, buffer *bufio.W
 
 	cmdObject := redis.selectCmd(request.CommandString())
 
+	keysToLock := cmdObject.keysToLock(&request)
+	err = redis.keys.LockKeys(tx, keysToLock)
+	if err != nil {
+		newPgRedisError("Error locking keys").writeTo(buffer)
+		return false
+	}
+
 	result, err := cmdObject.Execute(&request, redis, tx)
 	if err != nil {
 		newPgRedisError(err.Error()).writeTo(buffer)
@@ -332,6 +339,17 @@ func (redis *PgRedis) executeMultiCommand(requestQueue []redisRequest, buffer *b
 	_, err = tx.Exec("SET lock_timeout = 5000")
 	if err != nil {
 		newPgRedisError("Error setting lock timeout").writeTo(buffer)
+		return false
+	}
+
+	keysToLock := []string{}
+	for _, nextRequest := range requestQueue {
+		cmdObject := redis.selectCmd(nextRequest.CommandString())
+		keysToLock = append(keysToLock, cmdObject.keysToLock(&nextRequest)...)
+	}
+	err = redis.keys.LockKeys(tx, keysToLock)
+	if err != nil {
+		newPgRedisError("Error locking keys").writeTo(buffer)
 		return false
 	}
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lib/pq"
+	"sort"
 	"time"
 )
 
@@ -12,6 +13,24 @@ type KeyRepository struct{}
 
 func NewKeyRepository() *KeyRepository {
 	return &KeyRepository{}
+}
+
+func (repo *KeyRepository) LockKeys(tx *sql.Tx, keys []string) (error) {
+	if len(keys) == 0 {
+		return nil
+	}
+
+	// take an exclusive lock for each key, in sorted order to avoid deadlocks
+	// TODO we should probably remove dupe keys here
+	sort.Strings(keys)
+	for _, key := range keys {
+		sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
+		_, err := tx.Exec(sqlStat, key)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (repo *KeyRepository) Count(tx *sql.Tx) (int64, error) {
@@ -27,16 +46,9 @@ func (repo *KeyRepository) Count(tx *sql.Tx) (int64, error) {
 
 func (repo *KeyRepository) Delete(tx *sql.Tx, key []byte) (updated bool, err error) {
 
-	// take an exclusive lock for this key
-	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
-	_, err = tx.Exec(sqlStat, key)
-	if err != nil {
-		return false, err
-	}
-
 	// delete any expired rows in the db with this key
 	// we do this first so the count we return at the end doesn't include these rows
-	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
 	_, err = tx.Exec(sqlStat, key)
 	if err != nil {
 		return false, err
@@ -74,14 +86,7 @@ func (repo *KeyRepository) SetExpire(tx *sql.Tx, key []byte, expiry_secs int) (u
 		return false, errors.New("expiry_secs must be 1,000,000,000 or lower") // that's over 31 years
 	}
 
-	// take an exclusive lock for this key
-	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
-	_, err = tx.Exec(sqlStat, key)
-	if err != nil {
-		return false, err
-	}
-
-	sqlStat = "UPDATE redisdata SET expires_at=(now() + cast($2 as interval)) WHERE key=$1 AND (expires_at > now() OR expires_at IS NULL)"
+	sqlStat := "UPDATE redisdata SET expires_at=(now() + cast($2 as interval)) WHERE key=$1 AND (expires_at > now() OR expires_at IS NULL)"
 	interval := fmt.Sprintf("%d seconds", expiry_secs)
 	res, err := tx.Exec(sqlStat, key, interval)
 	if err != nil {

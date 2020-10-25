@@ -22,6 +22,10 @@ func (cmd *hgetCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 	}
 }
 
+func (cmd *hgetCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
+}
+
 type hmgetCommand struct{}
 
 func (cmd *hmgetCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -39,6 +43,10 @@ func (cmd *hmgetCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.
 	return newPgRedisArray(values), nil
 }
 
+func (cmd *hmgetCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
+}
+
 type hgetallCommand struct{}
 
 func (cmd *hgetallCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -48,6 +56,10 @@ func (cmd *hgetallCommand) Execute(command *redisRequest, redis *PgRedis, tx *sq
 		return nil, err
 	}
 	return newPgRedisArrayOfStrings(fields_and_values), nil
+}
+
+func (cmd *hgetallCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
 }
 
 type hmsetCommand struct{}
@@ -66,6 +78,10 @@ func (cmd *hmsetCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.
 	return newPgRedisString("OK"), nil
 }
 
+func (cmd *hmsetCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
+}
+
 type hsetCommand struct{}
 
 func (cmd *hsetCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -77,4 +93,8 @@ func (cmd *hsetCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 		return nil, err
 	}
 	return newPgRedisInt(inserted), nil
+}
+
+func (cmd *hsetCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
 }

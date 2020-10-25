@@ -96,16 +96,9 @@ func (repo *ListRepository) LeftRemove(tx *sql.Tx, key []byte, count int, value 
 	var removedCount int64
 	var maxIdx sql.NullInt64
 
-	// take an exclusive lock for this key
-	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
-	_, err := tx.Exec(sqlStat, key)
-	if err != nil {
-		return 0, err
-	}
-
 	// delete any expired rows in the db with this key
-	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
-	_, err = tx.Exec(sqlStat, key)
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	_, err := tx.Exec(sqlStat, key)
 	if err != nil {
 		return 0, err
 	}
@@ -147,16 +140,9 @@ func (repo *ListRepository) pop(tx *sql.Tx, key []byte, direction string) (bool,
 		return false, value, errors.New("direction must be left or right")
 	}
 
-	// take an exclusive lock for this key
-	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
-	_, err := tx.Exec(sqlStat, key)
-	if err != nil {
-		return false, value, err
-	}
-
 	// delete any expired rows in the db with this key
-	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
-	_, err = tx.Exec(sqlStat, key)
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	_, err := tx.Exec(sqlStat, key)
 	if err != nil {
 		return false, value, err
 	}
@@ -214,16 +200,9 @@ func (repo *ListRepository) push(tx *sql.Tx, key []byte, direction string, value
 	}
 	var newLength int
 
-	// take an exclusive lock for this key
-	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
-	_, err := tx.Exec(sqlStat, key)
-	if err != nil {
-		return 0, err
-	}
-
 	// delete any expired rows in the db with this key
-	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
-	_, err = tx.Exec(sqlStat, key)
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	_, err := tx.Exec(sqlStat, key)
 	if err != nil {
 		return 0, err
 	}

@@ -38,6 +38,12 @@ func (cmd *brpopCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.
 	}
 }
 
+func (cmd *brpopCommand) keysToLock(command *redisRequest) []string {
+	// TODO we don't claim any locks here, because we don't want to block other connections
+	//      while we poll. This makes this command open to deadlocks.
+	return []string{}
+}
+
 type llenCommand struct{}
 
 func (cmd *llenCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -47,6 +53,10 @@ func (cmd *llenCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 		return nil, err
 	}
 	return newPgRedisInt(int64(length)), nil
+}
+
+func (cmd *llenCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
 }
 
 type lpopCommand struct{}
@@ -64,6 +74,10 @@ func (cmd *lpopCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 	}
 }
 
+func (cmd *lpopCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
+}
+
 type lpushCommand struct{}
 
 func (cmd *lpushCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -77,6 +91,10 @@ func (cmd *lpushCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.
 		return nil, err
 	}
 	return newPgRedisInt(int64(newLength)), nil
+}
+
+func (cmd *lpushCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
 }
 
 type lrangeCommand struct{}
@@ -93,6 +111,10 @@ func (cmd *lrangeCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql
 	}
 }
 
+func (cmd *lrangeCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
+}
+
 type lremCommand struct{}
 
 func (cmd *lremCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -104,6 +126,10 @@ func (cmd *lremCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 		return nil, err
 	}
 	return newPgRedisInt(removed_count), nil
+}
+
+func (cmd *lremCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
 }
 
 type rpopCommand struct{}
@@ -121,6 +147,10 @@ func (cmd *rpopCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 	}
 }
 
+func (cmd *rpopCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
+}
+
 type rpushCommand struct{}
 
 func (cmd *rpushCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -134,4 +164,8 @@ func (cmd *rpushCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.
 		return nil, err
 	}
 	return newPgRedisInt(int64(newLength)), nil
+}
+
+func (cmd *rpushCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
 }

@@ -16,16 +16,9 @@ func NewSortedSetRepository() *SortedSetRepository {
 func (repo *SortedSetRepository) Add(tx *sql.Tx, key []byte, values map[string]float64, chArgProvided bool) (updated int64, err error) {
 	count := int64(0)
 
-	// take an exclusive lock for this key
-	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
-	_, err = tx.Exec(sqlStat, key)
-	if err != nil {
-		return 0, err
-	}
-
 	// delete any expired rows in the db with this key
 	// we do this first so the count we return at the end doesn't include these rows
-	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
 	_, err = tx.Exec(sqlStat, key)
 	if err != nil {
 		return 0, err
@@ -211,16 +204,9 @@ func (repo *SortedSetRepository) RangeByScore(tx *sql.Tx, key []byte, min float6
 }
 
 func (repo *SortedSetRepository) Remove(tx *sql.Tx, key []byte, values [][]byte) (count int64, err error) {
-	// take an exclusive lock for this key
-	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
-	_, err = tx.Exec(sqlStat, key)
-	if err != nil {
-		return 0, err
-	}
-
 	// delete any expired rows in the db with this key
 	// we do this first so the count we return at the end doesn't include these rows
-	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
 	_, err = tx.Exec(sqlStat, key)
 	if err != nil {
 		return 0, err
@@ -261,16 +247,9 @@ func (repo *SortedSetRepository) Remove(tx *sql.Tx, key []byte, values [][]byte)
 func (repo *SortedSetRepository) RemoveRangeByRank(tx *sql.Tx, key []byte, start int, end int) (count int64, err error) {
 	var setLength int
 
-	// take an exclusive lock for this key
-	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
-	_, err = tx.Exec(sqlStat, key)
-	if err != nil {
-		return 0, err
-	}
-
 	// delete any expired rows in the db with this key
 	// we do this first so the count we return at the end doesn't include these rows
-	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
 	_, err = tx.Exec(sqlStat, key)
 	if err != nil {
 		return 0, err
@@ -353,16 +332,9 @@ func (repo *SortedSetRepository) RemoveRangeByScore(tx *sql.Tx, key []byte, min 
 		maxOperator = "<="
 	}
 
-	// take an exclusive lock for this key
-	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
-	_, err = tx.Exec(sqlStat, key)
-	if err != nil {
-		return 0, err
-	}
-
 	// delete any expired rows in the db with this key
 	// we do this first so the count we return at the end doesn't include these rows
-	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
 	_, err = tx.Exec(sqlStat, key)
 	if err != nil {
 		return 0, err

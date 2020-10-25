@@ -20,6 +20,10 @@ func (cmd *saddCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 	return newPgRedisInt(updated), nil
 }
 
+func (cmd *saddCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
+}
+
 type scardCommand struct{}
 
 func (cmd *scardCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -30,6 +34,10 @@ func (cmd *scardCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.
 		return nil, err
 	}
 	return newPgRedisInt(count), nil
+}
+
+func (cmd *scardCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
 }
 
 type sremCommand struct{}
@@ -48,6 +56,10 @@ func (cmd *sremCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 	return newPgRedisInt(updated), nil
 }
 
+func (cmd *sremCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
+}
+
 type smembersCommand struct{}
 
 func (cmd *smembersCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -58,6 +70,10 @@ func (cmd *smembersCommand) Execute(command *redisRequest, redis *PgRedis, tx *s
 		return nil, err
 	}
 	return newPgRedisArrayOfStrings(values), nil
+}
+
+func (cmd *smembersCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
 }
 
 type sscanCommand struct{}
@@ -73,4 +89,8 @@ func (cmd *sscanCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.
 	response = append(response, newPgRedisString("0"))
 	response = append(response, newPgRedisArrayOfStrings(values))
 	return newPgRedisArray(response), nil
+}
+
+func (cmd *sscanCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
 }

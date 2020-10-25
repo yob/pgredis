@@ -24,6 +24,10 @@ func (cmd *delCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx
 	return newPgRedisInt(result), nil
 }
 
+func (cmd *delCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
+}
+
 type existsCommand struct{}
 
 func (cmd *existsCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -38,6 +42,10 @@ func (cmd *existsCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql
 		}
 	}
 	return newPgRedisInt(result), nil
+}
+
+func (cmd *existsCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
 }
 
 type expireCommand struct{}
@@ -58,6 +66,10 @@ func (cmd *expireCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql
 	}
 }
 
+func (cmd *expireCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
+}
+
 type pttlCommand struct{}
 
 func (cmd *pttlCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -74,6 +86,10 @@ func (cmd *pttlCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 	} else {
 		return newPgRedisInt(-2), nil // the key didn't exist
 	}
+}
+
+func (cmd *pttlCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
 }
 
 type ttlCommand struct{}
@@ -94,6 +110,10 @@ func (cmd *ttlCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx
 	}
 }
 
+func (cmd *ttlCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
+}
+
 type typeCommand struct{}
 
 func (cmd *typeCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -107,4 +127,8 @@ func (cmd *typeCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 	} else {
 		return newPgRedisString("none"), nil
 	}
+}
+
+func (cmd *typeCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
 }

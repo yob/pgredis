@@ -39,6 +39,15 @@ func (c *redisRequest) CommandString() string {
 	return strings.ToUpper(string(c.Get(0)))
 }
 
+// Fetch all args as a String slice
+func (c *redisRequest) Args() []string {
+	result := make([]string, 0, len(c.argv))
+	for _, arg := range c.argv {
+		result = append(result, string(arg))
+	}
+	return result
+}
+
 // Fetch a space delimited part of the incoming request as a byte array. Exists for compatibility
 // with redisproto.Cmd, and we may not keep it around forever.
 func (c *redisRequest) Get(index int) []byte {

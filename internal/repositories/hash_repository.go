@@ -65,15 +65,8 @@ func (repo *HashRepository) GetAll(tx *sql.Tx, key []byte) (fields_and_values []
 
 func (repo *HashRepository) Set(tx *sql.Tx, key []byte, field []byte, value []byte) (inserted int64, err error) {
 
-	// take an exclusive lock for this key
-	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
-	_, err = tx.Exec(sqlStat, key)
-	if err != nil {
-		return 0, err
-	}
-
 	// delete any expired rows in the db with this key
-	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
 	_, err = tx.Exec(sqlStat, key)
 	if err != nil {
 		return 0, err
@@ -118,15 +111,8 @@ func (repo *HashRepository) Set(tx *sql.Tx, key []byte, field []byte, value []by
 
 func (repo *HashRepository) SetMultiple(tx *sql.Tx, key string, fields_and_values map[string]string) (err error) {
 
-	// take an exclusive lock for this key
-	sqlStat := "SELECT pg_advisory_xact_lock(hashtext($1))"
-	_, err = tx.Exec(sqlStat, key)
-	if err != nil {
-		return err
-	}
-
 	// delete any expired rows in the db with this key
-	sqlStat = "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
+	sqlStat := "DELETE FROM redisdata WHERE key=$1 AND expires_at < now()"
 	_, err = tx.Exec(sqlStat, key)
 	if err != nil {
 		return err

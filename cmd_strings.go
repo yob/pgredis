@@ -21,6 +21,10 @@ func (cmd *appendCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql
 	return newPgRedisInt(int64(len(newValue))), nil
 }
 
+func (cmd *appendCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
+}
+
 type bitcountCommand struct{}
 
 func intOrZero(value string) int {
@@ -90,6 +94,10 @@ func (cmd *bitcountCommand) Execute(command *redisRequest, redis *PgRedis, tx *s
 	}
 }
 
+func (cmd *bitcountCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
+}
+
 type decrCommand struct{}
 
 func (cmd *decrCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -100,6 +108,10 @@ func (cmd *decrCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 	}
 	intValue, _ := strconv.Atoi(string(newValue))
 	return newPgRedisInt(int64(intValue)), nil
+}
+
+func (cmd *decrCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
 }
 
 type decrbyCommand struct{}
@@ -115,6 +127,10 @@ func (cmd *decrbyCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql
 	return newPgRedisInt(int64(intValue)), nil
 }
 
+func (cmd *decrbyCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
+}
+
 type getCommand struct{}
 
 func (cmd *getCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -127,6 +143,10 @@ func (cmd *getCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx
 	} else {
 		return newPgRedisNil(), nil
 	}
+}
+
+func (cmd *getCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
 }
 
 type getbitCommand struct{}
@@ -158,6 +178,10 @@ func (cmd *getbitCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql
 	}
 }
 
+func (cmd *getbitCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
+}
+
 type getsetCommand struct{}
 
 func (cmd *getsetCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -177,6 +201,10 @@ func (cmd *getsetCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql
 	} else {
 		return newPgRedisNil(), nil
 	}
+}
+
+func (cmd *getsetCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
 }
 
 type getrangeCommand struct{}
@@ -218,6 +246,10 @@ func (cmd *getrangeCommand) Execute(command *redisRequest, redis *PgRedis, tx *s
 	}
 }
 
+func (cmd *getrangeCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
+}
+
 type incrCommand struct{}
 
 func (cmd *incrCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -228,6 +260,10 @@ func (cmd *incrCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 	}
 	intValue, _ := strconv.Atoi(string(newValue))
 	return newPgRedisInt(int64(intValue)), nil
+}
+
+func (cmd *incrCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
 }
 
 type incrbyCommand struct{}
@@ -243,6 +279,10 @@ func (cmd *incrbyCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql
 	return newPgRedisInt(int64(intValue)), nil
 }
 
+func (cmd *incrbyCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
+}
+
 type incrbyfloatCommand struct{}
 
 func (cmd *incrbyfloatCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -253,6 +293,10 @@ func (cmd *incrbyfloatCommand) Execute(command *redisRequest, redis *PgRedis, tx
 		return nil, err
 	}
 	return newPgRedisString(string(newValue)), nil
+}
+
+func (cmd *incrbyfloatCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
 }
 
 type mgetCommand struct{}
@@ -272,6 +316,10 @@ func (cmd *mgetCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 	return newPgRedisArray(result), nil
 }
 
+func (cmd *mgetCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
+}
+
 type msetCommand struct{}
 
 func (cmd *msetCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -286,6 +334,17 @@ func (cmd *msetCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 		return nil, err
 	}
 	return newPgRedisString("OK"), nil
+}
+
+func (cmd *msetCommand) keysToLock(command *redisRequest) []string {
+	// MSET foo 1 bar 2 => {foo, bar}
+	result := []string{}
+	for i, arg := range command.Args()[1:] {
+		if i%2 == 0 {
+			result = append(result, arg)
+		}
+	}
+	return result
 }
 
 type setCommand struct{}
@@ -332,6 +391,10 @@ func (cmd *setCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx
 	}
 }
 
+func (cmd *setCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
+}
+
 type setexCommand struct{}
 
 func (cmd *setexCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -347,6 +410,10 @@ func (cmd *setexCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.
 	return newPgRedisString("OK"), nil
 }
 
+func (cmd *setexCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
+}
+
 type psetexCommand struct{}
 
 func (cmd *psetexCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -358,6 +425,10 @@ func (cmd *psetexCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql
 		return nil, err
 	}
 	return newPgRedisString("OK"), nil
+}
+
+func (cmd *psetexCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
 }
 
 type setnxCommand struct{}
@@ -378,6 +449,10 @@ func (cmd *setnxCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.
 	}
 }
 
+func (cmd *setnxCommand) keysToLock(command *redisRequest) []string {
+	return command.Args()[1:2]
+}
+
 type strlenCommand struct{}
 
 func (cmd *strlenCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -390,6 +465,10 @@ func (cmd *strlenCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql
 	} else {
 		return newPgRedisInt(0), nil
 	}
+}
+
+func (cmd *strlenCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
 }
 
 func commandExValueInMillis(command *redisRequest) int {

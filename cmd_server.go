@@ -17,6 +17,11 @@ func (cmd *flushallCommand) Execute(command *redisRequest, redis *PgRedis, tx *s
 	return newPgRedisString("OK"), nil
 }
 
+func (cmd *flushallCommand) keysToLock(command *redisRequest) []string {
+	// TODO do we need to lock on all keys/tables?
+	return []string{}
+}
+
 type clientCommand struct{}
 
 func (cmd *clientCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -28,6 +33,10 @@ func (cmd *clientCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql
 	}
 }
 
+func (cmd *clientCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
+}
+
 type dbsizeCommand struct{}
 
 func (cmd *dbsizeCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.Tx) (pgRedisValue, error) {
@@ -36,6 +45,10 @@ func (cmd *dbsizeCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql
 		return nil, err
 	}
 	return newPgRedisInt(count), nil
+}
+
+func (cmd *dbsizeCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
 }
 
 type infoCommand struct{}
@@ -59,4 +72,8 @@ func (cmd *infoCommand) Execute(command *redisRequest, redis *PgRedis, tx *sql.T
 	result = append(result, "cluster_enabled:0")
 	result = append(result, "# Keyspace")
 	return newPgRedisString(strings.Join(result, "\r\n")), nil
+}
+
+func (cmd *infoCommand) keysToLock(command *redisRequest) []string {
+	return []string{}
 }
